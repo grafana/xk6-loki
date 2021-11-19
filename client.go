@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"net/url"
+	"path"
 	"time"
 
 	"github.com/go-kit/log"
@@ -34,6 +35,128 @@ type Config struct {
 	TenantID      string
 	Labels        LabelPool
 	ProtobufRatio float64
+}
+
+func (c *Client) InstantQuery(ctx context.Context, logQuery string, limit int) (httpext.Response, error) {
+	q := &Query{
+		Type:        InstantQuery,
+		QueryString: logQuery,
+		Limit:       limit,
+	}
+	q.SetInstant(time.Now())
+	return c.sendQuery(ctx, q)
+}
+
+func (c *Client) RangeQuery(ctx context.Context, logQuery string, duration string, limit int) (httpext.Response, error) {
+	now := time.Now()
+	dur, err := time.ParseDuration(duration)
+	if err != nil {
+		return httpext.Response{}, err
+	}
+	q := &Query{
+		Type:        RangeQuery,
+		QueryString: logQuery,
+		Start:       now.Add(-dur),
+		End:         now,
+		Limit:       limit,
+	}
+	return c.sendQuery(ctx, q)
+}
+
+func (c *Client) LabelsQuery(ctx context.Context, duration string) (httpext.Response, error) {
+	now := time.Now()
+	dur, err := time.ParseDuration(duration)
+	if err != nil {
+		return httpext.Response{}, err
+	}
+	q := &Query{
+		Type:  LabelsQuery,
+		Start: now.Add(-dur),
+		End:   now,
+	}
+	return c.sendQuery(ctx, q)
+}
+
+func (c *Client) LabelValuesQuery(ctx context.Context, label string, duration string) (httpext.Response, error) {
+	now := time.Now()
+	dur, err := time.ParseDuration(duration)
+	if err != nil {
+		return httpext.Response{}, err
+	}
+	q := &Query{
+		Type:       LabelValuesQuery,
+		Start:      now.Add(-dur),
+		End:        now,
+		PathParams: []interface{}{label},
+	}
+	return c.sendQuery(ctx, q)
+}
+
+func (c *Client) SeriesQuery(ctx context.Context, matchers string, duration string) (httpext.Response, error) {
+	now := time.Now()
+	dur, err := time.ParseDuration(duration)
+	if err != nil {
+		return httpext.Response{}, err
+	}
+	q := &Query{
+		Type:        SeriesQuery,
+		QueryString: matchers,
+		Start:       now.Add(-dur),
+		End:         now,
+	}
+	return c.sendQuery(ctx, q)
+}
+
+// buildURL concatinates a URL `http://foo/bar` with a path `/buzz` and a query string `?query=...`.
+func buildURL(u, p, qs string) (string, error) {
+	url, err := url.Parse(u)
+	if err != nil {
+		return "", err
+	}
+	url.Path = path.Join(url.Path, p)
+	url.RawQuery = qs
+	return url.String(), nil
+}
+
+func (c *Client) sendQuery(ctx context.Context, q *Query) (httpext.Response, error) {
+	state := lib.GetState(ctx)
+	if state == nil {
+		return *httpext.NewResponse(ctx), errors.New("state is nil")
+	}
+
+	httpResp := httpext.NewResponse(ctx)
+	path := q.Endpoint()
+
+	urlString, err := buildURL(c.cfg.URL.String(), path, q.Values().Encode())
+	if err != nil {
+		return *httpext.NewResponse(ctx), err
+	}
+
+	r, err := http.NewRequest(http.MethodGet, urlString, nil)
+	if err != nil {
+		return *httpResp, err
+	}
+
+	r.Header.Set("User-Agent", c.cfg.UserAgent)
+	r.Header.Set("Accept", ContentTypeJSON)
+	if c.cfg.TenantID != "" {
+		r.Header.Set("X-Scope-OrgID", c.cfg.TenantID)
+	}
+
+	url, _ := httpext.NewURL(urlString, path)
+	response, err := httpext.MakeRequest(ctx, &httpext.ParsedHTTPRequest{
+		URL:              &url,
+		Req:              r,
+		Throw:            state.Options.Throw.Bool,
+		Redirects:        state.Options.MaxRedirects,
+		Timeout:          c.cfg.Timeout,
+		ResponseCallback: ResponseCallback,
+	})
+	if err != nil {
+		return *httpResp, err
+	}
+
+	return *response, err
 }
 
 func (c *Client) Push(ctx context.Context) (httpext.Response, error) {
@@ -78,7 +201,8 @@ func (c *Client) pushBatch(ctx context.Context, batch *Batch) (httpext.Response,
 
 func (c *Client) send(ctx context.Context, state *lib.State, buf []byte, useProtobuf bool) (httpext.Response, error) {
 	httpResp := httpext.NewResponse(ctx)
-	r, err := http.NewRequest(http.MethodPost, c.cfg.URL.String(), nil)
+	path := "/loki/api/v1/push"
+	r, err := http.NewRequest(http.MethodPost, c.cfg.URL.String()+path, nil)
 	if err != nil {
 		return *httpResp, err
 	}
@@ -94,7 +218,7 @@ func (c *Client) send(ctx context.Context, state *lib.State, buf []byte, useProt
 		r.Header.Set("Content-Type", ContentTypeJSON)
 	}
 
-	url, _ := httpext.NewURL(c.cfg.URL.String(), "push")
+	url, _ := httpext.NewURL(c.cfg.URL.String()+path, path)
 	response, err := httpext.MakeRequest(ctx, &httpext.ParsedHTTPRequest{
 		URL:              &url,
 		Req:              r,

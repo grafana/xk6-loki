@@ -1,6 +1,8 @@
 PWD := $(shell pwd)
 GO_FILES := $(shell find . -type f -name "*.go" -print)
 
+.PHONY: run
+
 k6: $(GO_FILES)
 	xk6 build \
 		--replace "github.com/mingrammer/flog=github.com/chaudum/flog@v0.4.4-0.20211115125504-92153be038e6" \
