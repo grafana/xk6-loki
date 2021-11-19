@@ -78,3 +78,8 @@ func (r *Loki) XClient(ctxPtr *context.Context, config Config) interface{} {
 		cfg:    &config,
 	}, ctxPtr)
 }
+
+func (r *Loki) GetLabels(ctxPtr *context.Context, config Config) interface{} {
+	rt := common.GetRuntime(*ctxPtr)
+	return common.Bind(rt, &config.Labels, ctxPtr)
+}

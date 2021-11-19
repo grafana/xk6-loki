@@ -16,3 +16,5 @@ require (
 )
 
 replace github.com/mingrammer/flog => github.com/chaudum/flog v0.4.4-0.20211115125504-92153be038e6
+
+replace google.golang.org/grpc => google.golang.org/grpc v1.40.0

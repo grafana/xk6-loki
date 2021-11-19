@@ -2,10 +2,11 @@ import sleep from 'k6';
 import loki from 'k6/x/loki';
 
 /**
- * Full URL of used for push requests
+ * URL used for push and query requests
+ * Path is automatically appended by the client
  * @constant {string}
  */
-const PUSH_URL = `http://localhost:3100/loki/api/v1/push`;
+const BASE_URL = `http://localhost:3100`;
 
 
 export const options = {
@@ -13,7 +14,7 @@ export const options = {
   iterations: 10,
 };
 
-const conf = new loki.Config(PUSH_URL);
+const conf = new loki.Config(BASE_URL);
 const client = new loki.Client(conf);
 
 export default () => {
