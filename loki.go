@@ -9,12 +9,16 @@ import (
 	gofakeit "github.com/brianvoe/gofakeit/v6"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/js/modules"
+	"go.k6.io/k6/stats"
 )
 
 var (
 	DefaultProtobufRatio = 0.9
 	DefaultPushTimeout   = 10000
 	DefaultUserAgent     = "xk6-loki/0.0.1"
+
+	ClientUncompressedBytes = stats.New("loki_client_uncompressed_bytes", stats.Counter, stats.Data)
+	ClientLines             = stats.New("loki_client_lines", stats.Counter, stats.Default)
 )
 
 // init registers the Go module as Javascript module for k6

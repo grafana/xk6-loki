@@ -40,8 +40,8 @@ func (c *Client) Push(ctx context.Context) (httpext.Response, error) {
 	return c.PushParametrized(ctx, 5, 500, 1000)
 }
 
-func (c *Client) PushParametrized(ctx context.Context, streams, minLogs, maxLogs int) (httpext.Response, error) {
-	entries := generateEntries(ctx, c.cfg.TenantID, c.cfg.Labels, streams, minLogs, maxLogs)
+func (c *Client) PushParametrized(ctx context.Context, streams, minBatchSize, maxBatchSize int) (httpext.Response, error) {
+	entries := generateEntries(ctx, c.cfg.TenantID, c.cfg.Labels, streams, minBatchSize, maxBatchSize)
 	batch := newBatch(entries...)
 	return c.pushBatch(ctx, batch)
 }
