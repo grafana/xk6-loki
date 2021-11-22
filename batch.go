@@ -15,6 +15,7 @@ import (
 	"github.com/mingrammer/flog/flog"
 	"github.com/prometheus/common/model"
 	"go.k6.io/k6/lib"
+	"go.k6.io/k6/stats"
 )
 
 type FakeFunc func() string
@@ -127,7 +128,7 @@ func (b *Batch) createPushRequest() (*logproto.PushRequest, int) {
 }
 
 // generateEntries creates a list of log entries
-func generateEntries(ctx context.Context, tenantID string, pool LabelPool, s int, min int, max int) []Entry {
+func generateEntries(ctx context.Context, tenantID string, pool LabelPool, numStreams, minBatchSize, maxBatchSize int) []Entry {
 	state := lib.GetState(ctx)
 
 	hostname, err := os.Hostname()
@@ -135,30 +136,52 @@ func generateEntries(ctx context.Context, tenantID string, pool LabelPool, s int
 		hostname = "localhost"
 	}
 
-	result := make([]Entry, 0)
+	entries := make([]Entry, 0)
 	var labels model.LabelSet
-	var n int
-	// create `[min,max)` entries for `s` streams
-	for i := 0; i < s; i++ {
-		labels = labelsFromPool(pool)
-		labels[model.InstanceLabel] = model.LabelValue(fmt.Sprintf("vu%d.%s.local", state.VUID, hostname))
+	maxSizePerStream := (minBatchSize + rand.Intn(maxBatchSize-minBatchSize)) / numStreams
+	batchSize := 0
+	lines := 0
 
-		n = min + rand.Intn(max-min)
-		entries := make([]Entry, n)
-		for i := 0; i < n; i++ {
-			entries[i] = Entry{
+	for i := 0; i < numStreams; i++ {
+		labels = labelsFromPool(pool)
+		labels[model.InstanceLabel] = model.LabelValue(fmt.Sprintf("vu%d.%s", state.VUID, hostname))
+
+		streamSize := 0
+		for streamSize < maxSizePerStream {
+			line := flog.NewLog(string(labels[model.LabelName("format")]), time.Now())
+			entry := Entry{
 				Entry: logproto.Entry{
 					Timestamp: time.Now(),
-					Line:      flog.NewLog(string(labels[model.LabelName("format")]), time.Now()),
+					Line:      line,
 				},
 				TenantID: tenantID,
 				Labels:   labels,
 			}
-			time.Sleep(10 * time.Millisecond)
+			entries = append(entries, entry)
+			streamSize += len(line)
+			lines++
 		}
-		result = append(result, entries...)
+		batchSize += streamSize
 	}
-	return result
+
+	now := time.Now()
+	stats.PushIfNotDone(ctx, state.Samples, stats.ConnectedSamples{
+		Samples: []stats.Sample{
+			{
+				Metric: ClientUncompressedBytes,
+				Tags:   &stats.SampleTags{},
+				Value:  float64(batchSize),
+				Time:   now,
+			},
+			{
+				Metric: ClientLines,
+				Tags:   &stats.SampleTags{},
+				Value:  float64(lines),
+				Time:   now,
+			},
+		},
+	})
+	return entries
 }
 
 // choice returns a single label value from a list of label values
