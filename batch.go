@@ -8,6 +8,7 @@ import (
 	"time"
 
 	fake "github.com/brianvoe/gofakeit/v6"
+	"github.com/brianvoe/gofakeit/v6/data"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/grafana/loki/pkg/logproto"
@@ -19,13 +20,7 @@ import (
 
 type FakeFunc func() string
 
-type LabelPool struct {
-	Format    model.LabelValues
-	Namespace model.LabelValues
-	App       model.LabelValues
-	Pod       model.LabelValues
-	Instance  model.LabelValue
-}
+type LabelPool map[model.LabelName][]string
 
 type Batch struct {
 	Streams   map[string]*logproto.Stream
@@ -162,36 +157,37 @@ func generateEntries(ctx context.Context, tenantID string, pool LabelPool, s int
 }
 
 // choice returns a single label value from a list of label values
-func choice(values model.LabelValues) model.LabelValue {
-	return values[rand.Intn(values.Len())]
+func choice(values []string) string {
+	return values[rand.Intn(len(values))]
 }
 
 // labelsFromPool creates a label set from the given label value pool `p`
 func labelsFromPool(p LabelPool) model.LabelSet {
-	return model.LabelSet{
-		"app":       choice(p.App),
-		"format":    choice(p.Format),
-		"namespace": choice(p.Namespace),
-		"pod":       choice(p.Pod),
+	ls := make(model.LabelSet, len(p))
+	for k, v := range p {
+		ls[k] = model.LabelValue(choice(v))
 	}
+	return ls
 }
 
 // generateValues returns `n` label values generated with the `ff` gofakeit function
-func generateValues(ff FakeFunc, n int) model.LabelValues {
-	res := make(model.LabelValues, n)
+func generateValues(ff FakeFunc, n int) []string {
+	res := make([]string, n)
 	for i := 0; i < n; i++ {
-		res[i] = model.LabelValue(ff())
+		res[i] = ff()
 	}
 	return res
 }
 
 // newLabelPool creates a "pool" of values for each label name
-// The amount of different values per label name is not configurable yet.
-func newLabelPool(faker *fake.Faker) LabelPool {
+func newLabelPool(faker *fake.Faker, cardinalities map[string]int) LabelPool {
 	return LabelPool{
-		Format:    model.LabelValues{"apache_common", "json"}, // needs to match the available flog formats
-		Namespace: generateValues(faker.BS, 10),
-		App:       generateValues(faker.BS, 5),
-		Pod:       generateValues(faker.BS, 100),
+		"format":    []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json"}, // needs to match the available flog formats
+		"os":        []string{"darwin", "linux", "windows"},
+		"namespace": generateValues(faker.BS, cardinalities["namespace"]),
+		"app":       generateValues(faker.AppName, cardinalities["app"]),
+		"pod":       generateValues(faker.BS, cardinalities["pod"]),
+		"language":  data.Data["language"]["short"],
+		"word":      data.Data["word"]["noun"],
 	}
 }
