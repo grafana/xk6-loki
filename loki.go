@@ -39,7 +39,7 @@ type Loki struct{}
 // ```js
 // const cfg = new loki.Config(url);
 // ```
-func (r *Loki) XConfig(ctxPtr *context.Context, urlString string, timeoutMs int, protobufRatio float64) interface{} {
+func (r *Loki) XConfig(ctxPtr *context.Context, urlString string, timeoutMs int, protobufRatio float64, cardinalities map[string]int) interface{} {
 	faker := gofakeit.New(12345)
 
 	u, err := url.Parse(urlString)
@@ -61,7 +61,7 @@ func (r *Loki) XConfig(ctxPtr *context.Context, urlString string, timeoutMs int,
 			UserAgent:     DefaultUserAgent,
 			TenantID:      u.User.Username(),
 			Timeout:       time.Duration(timeoutMs) * time.Millisecond,
-			Labels:        newLabelPool(faker),
+			Labels:        newLabelPool(faker, cardinalities),
 			ProtobufRatio: protobufRatio,
 		},
 		ctxPtr)
