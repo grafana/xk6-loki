@@ -2,6 +2,7 @@ package loki
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -40,6 +41,23 @@ type Loki struct{}
 // const cfg = new loki.Config(url);
 // ```
 func (r *Loki) XConfig(ctxPtr *context.Context, urlString string, timeoutMs int, protobufRatio float64, cardinalities map[string]int) interface{} {
+	if timeoutMs == 0 {
+		timeoutMs = DefaultPushTimeout
+	}
+	if protobufRatio == 0 {
+		protobufRatio = DefaultProtobufRatio
+	}
+	if len(cardinalities) == 0 {
+		cardinalities = map[string]int{
+			"app":       5,
+			"namespace": 10,
+			"pod":       100,
+		}
+	}
+
+	logger := common.GetInitEnv(*ctxPtr).Logger
+	logger.Debug(fmt.Sprintf("url=%s timeoutMs=%d protobufRatio=%f cardinalities=%v", urlString, timeoutMs, protobufRatio, cardinalities))
+
 	faker := gofakeit.New(12345)
 
 	u, err := url.Parse(urlString)
