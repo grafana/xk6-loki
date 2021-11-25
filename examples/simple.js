@@ -8,16 +8,34 @@ import loki from 'k6/x/loki';
  */
 const BASE_URL = `http://localhost:3100`;
 
+/**
+ * Helper constant for byte values
+ * @constant {number}
+ */
+const KB = 1024;
 
+/**
+ * Helper constant for byte values
+ * @constant {number}
+ */
+const MB = KB * KB;
+
+/**
+ * Instantiate config and Loki client
+ */
+const conf = new loki.Config(BASE_URL);
+const client = new loki.Client(conf);
+
+/**
+ * Define test scenario
+ */
 export const options = {
   vus: 10,
   iterations: 10,
 };
 
-const conf = new loki.Config(BASE_URL);
-const client = new loki.Client(conf);
-
 export default () => {
-  client.push()
-  sleep(1)
+  client.pushParametrized(2, 500 * KB, 1 * MB);
+  check(res, { 'successful write': (res) => res.status == 204 });
+  sleep(1);
 }
