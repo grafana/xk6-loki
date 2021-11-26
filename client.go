@@ -3,6 +3,7 @@ package loki
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -20,6 +21,8 @@ const (
 	ContentTypeJSON       = "application/json"
 	ContentEncodingSnappy = "snappy"
 	ContentEncodingGzip   = "gzip"
+
+	TenantPrefix = "xk6-tenant"
 )
 
 type Client struct {
@@ -141,6 +144,8 @@ func (c *Client) sendQuery(ctx context.Context, q *Query) (httpext.Response, err
 	r.Header.Set("Accept", ContentTypeJSON)
 	if c.cfg.TenantID != "" {
 		r.Header.Set("X-Scope-OrgID", c.cfg.TenantID)
+	} else {
+		r.Header.Set("X-Scope-OrgID", fmt.Sprintf("%s-%d", TenantPrefix, state.VUID))
 	}
 
 	url, _ := httpext.NewURL(urlString, path)
@@ -208,8 +213,11 @@ func (c *Client) send(ctx context.Context, state *lib.State, buf []byte, useProt
 	}
 
 	r.Header.Set("User-Agent", c.cfg.UserAgent)
+	r.Header.Set("Accept", ContentTypeJSON)
 	if c.cfg.TenantID != "" {
 		r.Header.Set("X-Scope-OrgID", c.cfg.TenantID)
+	} else {
+		r.Header.Set("X-Scope-OrgID", fmt.Sprintf("%s-%d", TenantPrefix, state.VUID))
 	}
 	if useProtobuf {
 		r.Header.Set("Content-Type", ContentTypeProtobuf)
