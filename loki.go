@@ -54,6 +54,12 @@ func (r *Loki) XConfig(ctxPtr *context.Context, urlString string, timeoutMs int,
 	if protobufRatio == 0.0 {
 		protobufRatio = DefaultProtobufRatio
 	}
+
+	if u.User.Username() == "" {
+		logger := common.GetInitEnv(*ctxPtr).Logger
+		logger.Warn("Running in multi-tenant-mode. Each VU has its own X-Scope-OrgID")
+	}
+
 	return common.Bind(
 		rt,
 		&Config{
