@@ -244,5 +244,6 @@ func (c *Client) send(ctx context.Context, state *lib.State, buf []byte, useProt
 }
 
 func ResponseCallback(n int) bool {
-	return n == 200
+	// report all 2xx respones as successful requests
+	return n/100 == 2
 }
