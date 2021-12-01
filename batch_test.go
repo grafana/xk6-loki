@@ -36,6 +36,6 @@ func BenchmarkGenerateEntries(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		_ = generateEntries(ctx, "12", labels, streams, minBatchSize, maxBatchSize)
+		_ = newBatch(ctx, labels, streams, minBatchSize, maxBatchSize)
 	}
 }

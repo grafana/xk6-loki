@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	fake "github.com/brianvoe/gofakeit/v6"
@@ -34,52 +36,13 @@ type Entry struct {
 	Labels   model.LabelSet
 }
 
-func newBatch(entries ...Entry) *Batch {
-	b := &Batch{
-		Streams:   map[string]*logproto.Stream{},
-		CreatedAt: time.Now(),
-	}
-
-	// Add entries to the batch
-	for _, entry := range entries {
-		b.add(entry)
-	}
-
-	return b
+type JSONStream struct {
+	Stream map[string]string `json:"stream"`
+	Values [][]string        `json:"values"`
 }
 
-// add an entry to the batch
-func (b *Batch) add(entry Entry) {
-	b.Bytes += len(entry.Line)
-
-	// Append the entry to an already existing stream (if any)
-	labels := entry.Labels.String()
-	if stream, ok := b.Streams[labels]; ok {
-		stream.Entries = append(stream.Entries, entry.Entry)
-		return
-	}
-
-	// Add the entry as a new stream
-	b.Streams[labels] = &logproto.Stream{
-		Labels:  labels,
-		Entries: []logproto.Entry{entry.Entry},
-	}
-}
-
-// sizeBytes returns the current batch size in bytes
-func (b *Batch) sizeBytes() int {
-	return b.Bytes
-}
-
-// sizeBytesAfter returns the size of the batch after the input entry
-// will be added to the batch itself
-func (b *Batch) sizeBytesAfter(entry Entry) int {
-	return b.Bytes + len(entry.Line)
-}
-
-// age of the batch since its creation
-func (b *Batch) age() time.Duration {
-	return time.Since(b.CreatedAt)
+type JSONPushRequest struct {
+	Streams []JSONStream `json:"streams"`
 }
 
 // encodeSnappy encodes the batch as snappy-compressed push request, and
@@ -97,12 +60,57 @@ func (b *Batch) encodeSnappy() ([]byte, int, error) {
 // encodeJSON encodes the batch as JSON push request, and returns the encoded
 // bytes and the number of encoded entries
 func (b *Batch) encodeJSON() ([]byte, int, error) {
-	req, entriesCount := b.createPushRequest()
+	req, entriesCount := b.createJSONPushRequest()
 	buf, err := json.Marshal(req)
 	if err != nil {
 		return nil, 0, err
 	}
 	return buf, entriesCount, nil
+}
+
+// createJSONPushRequest creates a JSON push payload and returns it, together with
+// number of entries
+func (b *Batch) createJSONPushRequest() (*JSONPushRequest, int) {
+	req := JSONPushRequest{
+		Streams: make([]JSONStream, 0, len(b.Streams)),
+	}
+
+	entriesCount := 0
+	for _, stream := range b.Streams {
+		req.Streams = append(req.Streams, JSONStream{
+			Stream: labelStringToMap(stream.Labels),
+			Values: entriesToValues(stream.Entries),
+		})
+		entriesCount += len(stream.Entries)
+	}
+	return &req, entriesCount
+}
+
+// labelStringToMap converts a label string used by the `Batch` struct in
+// format `{label_a=value_a,label_b=value_b}` to a map that can be used in the
+// JSON payload of push requests.
+func labelStringToMap(labels string) map[string]string {
+	kvList := strings.TrimSuffix(strings.TrimPrefix(labels, "{"), "}")
+	kv := strings.Split(kvList, ",")
+	labelMap := make(map[string]string, len(kv))
+	for _, item := range kv {
+		parts := strings.Split(item, "=")
+		labelMap[parts[0]] = parts[1]
+	}
+	return labelMap
+}
+
+// entriesToValues converts a slice of `Entry` to a slice of string tuples that
+// can be used in the JSON payload of push requests.
+func entriesToValues(entries []logproto.Entry) [][]string {
+	lines := make([][]string, 0, len(entries))
+	for _, entry := range entries {
+		lines = append(lines, []string{
+			strconv.FormatInt(entry.Timestamp.UnixNano(), 10),
+			entry.Line,
+		})
+	}
+	return lines
 }
 
 // createPushRequest creates a push request and returns it, together with
@@ -120,8 +128,8 @@ func (b *Batch) createPushRequest() (*logproto.PushRequest, int) {
 	return &req, entriesCount
 }
 
-// generateEntries creates a batch
-func generateEntries(ctx context.Context, tenantID string, pool LabelPool, numStreams, minBatchSize, maxBatchSize int) *Batch {
+// newBatch creates a batch with randomly generated log streams
+func newBatch(ctx context.Context, pool LabelPool, numStreams, minBatchSize, maxBatchSize int) *Batch {
 	batch := &Batch{
 		Streams:   make(map[string]*logproto.Stream, numStreams),
 		CreatedAt: time.Now(),

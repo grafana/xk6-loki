@@ -171,7 +171,7 @@ func (c *Client) Push(ctx context.Context) (httpext.Response, error) {
 }
 
 func (c *Client) PushParametrized(ctx context.Context, streams, minBatchSize, maxBatchSize int) (httpext.Response, error) {
-	batch := generateEntries(ctx, c.cfg.TenantID, c.cfg.Labels, streams, minBatchSize, maxBatchSize)
+	batch := newBatch(ctx, c.cfg.Labels, streams, minBatchSize, maxBatchSize)
 	return c.pushBatch(ctx, batch)
 }
 
