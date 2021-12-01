@@ -1,3 +1,4 @@
+// Package loki is the k6 extension module.
 package loki
 
 import (
