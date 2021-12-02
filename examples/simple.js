@@ -1,4 +1,4 @@
-import sleep from 'k6';
+import {sleep, check} from 'k6';
 import loki from 'k6/x/loki';
 
 /**
@@ -35,7 +35,7 @@ export const options = {
 };
 
 export default () => {
-  client.pushParametrized(2, 500 * KB, 1 * MB);
+  var res = client.pushParametrized(2, 500 * KB, 1 * MB);
   check(res, { 'successful write': (res) => res.status == 204 });
   sleep(1);
 }
