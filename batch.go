@@ -38,7 +38,6 @@ type Entry struct {
 func newBatch(entries ...Entry) *Batch {
 	b := &Batch{
 		Streams:   map[string]*logproto.Stream{},
-		Bytes:     0,
 		CreatedAt: time.Now(),
 	}
 
@@ -122,8 +121,12 @@ func (b *Batch) createPushRequest() (*logproto.PushRequest, int) {
 	return &req, entriesCount
 }
 
-// generateEntries creates a list of log entries
-func generateEntries(ctx context.Context, tenantID string, pool LabelPool, numStreams, minBatchSize, maxBatchSize int) []Entry {
+// generateEntries creates a batch
+func generateEntries(ctx context.Context, tenantID string, pool LabelPool, numStreams, minBatchSize, maxBatchSize int) *Batch {
+	batch := &Batch{
+		Streams:   make(map[string]*logproto.Stream, numStreams),
+		CreatedAt: time.Now(),
+	}
 	state := lib.GetState(ctx)
 
 	hostname, err := os.Hostname()
@@ -131,41 +134,36 @@ func generateEntries(ctx context.Context, tenantID string, pool LabelPool, numSt
 		hostname = "localhost"
 	}
 
-	entries := make([]Entry, 0)
-	var labels model.LabelSet
 	maxSizePerStream := (minBatchSize + rand.Intn(maxBatchSize-minBatchSize)) / numStreams
-	batchSize := 0
 	lines := 0
 
 	for i := 0; i < numStreams; i++ {
-		labels = labelsFromPool(pool)
+		labels := labelsFromPool(pool)
 		labels[model.InstanceLabel] = model.LabelValue(fmt.Sprintf("vu%d.%s", state.VUID, hostname))
+		stream := &logproto.Stream{Labels: labels.String()}
+		batch.Streams[stream.Labels] = stream
 
-		streamSize := 0
-		for streamSize < maxSizePerStream {
-			line := flog.NewLog(string(labels[model.LabelName("format")]), time.Now())
-			entry := Entry{
-				Entry: logproto.Entry{
-					Timestamp: time.Now(),
-					Line:      line,
-				},
-				TenantID: tenantID,
-				Labels:   labels,
-			}
-			entries = append(entries, entry)
-			streamSize += len(line)
-			lines++
+		var now time.Time
+		logFmt := string(labels[model.LabelName("format")])
+		var line string
+		for ; batch.Bytes < maxSizePerStream; batch.Bytes += len(line) {
+			now = time.Now()
+			line = flog.NewLog(logFmt, now)
+			stream.Entries = append(stream.Entries, logproto.Entry{
+				Timestamp: now,
+				Line:      line,
+			})
 		}
-		batchSize += streamSize
+		lines += len(stream.Entries)
 	}
 
-	now := time.Now()
+	now := time.Now() // TODO move this in the send
 	stats.PushIfNotDone(ctx, state.Samples, stats.ConnectedSamples{
 		Samples: []stats.Sample{
 			{
 				Metric: ClientUncompressedBytes,
 				Tags:   &stats.SampleTags{},
-				Value:  float64(batchSize),
+				Value:  float64(batch.Bytes),
 				Time:   now,
 			},
 			{
@@ -176,7 +174,8 @@ func generateEntries(ctx context.Context, tenantID string, pool LabelPool, numSt
 			},
 		},
 	})
-	return entries
+
+	return batch
 }
 
 // choice returns a single label value from a list of label values
