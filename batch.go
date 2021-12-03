@@ -8,7 +8,6 @@ import (
 	"time"
 
 	fake "github.com/brianvoe/gofakeit/v6"
-	"github.com/brianvoe/gofakeit/v6/data"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/grafana/loki/pkg/logproto"
@@ -203,13 +202,24 @@ func generateValues(ff FakeFunc, n int) []string {
 
 // newLabelPool creates a "pool" of values for each label name
 func newLabelPool(faker *fake.Faker, cardinalities map[string]int) LabelPool {
-	return LabelPool{
-		"format":    []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json"}, // needs to match the available flog formats
-		"os":        []string{"darwin", "linux", "windows"},
-		"namespace": generateValues(faker.BS, cardinalities["namespace"]),
-		"app":       generateValues(faker.AppName, cardinalities["app"]),
-		"pod":       generateValues(faker.BS, cardinalities["pod"]),
-		"language":  data.Data["language"]["short"],
-		"word":      data.Data["word"]["noun"],
+	lb := LabelPool{
+		"format": []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json"}, // needs to match the available flog formats
+		"os":     []string{"darwin", "linux", "windows"},
 	}
+	if n, ok := cardinalities["namespace"]; ok {
+		lb["namespace"] = generateValues(faker.BS, n)
+	}
+	if n, ok := cardinalities["app"]; ok {
+		lb["app"] = generateValues(faker.AppName, n)
+	}
+	if n, ok := cardinalities["pod"]; ok {
+		lb["pod"] = generateValues(faker.BS, n)
+	}
+	if n, ok := cardinalities["language"]; ok {
+		lb["language"] = generateValues(faker.LanguageAbbreviation, n)
+	}
+	if n, ok := cardinalities["word"]; ok {
+		lb["word"] = generateValues(faker.Noun, n)
+	}
+	return lb
 }
