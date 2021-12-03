@@ -165,7 +165,9 @@ func (c *Client) sendQuery(ctx context.Context, q *Query) (httpext.Response, err
 }
 
 func (c *Client) Push(ctx context.Context) (httpext.Response, error) {
-	return c.PushParametrized(ctx, 5, 500, 1000)
+	// 5 streams per batch
+	// batch size between 800KB and 1MB
+	return c.PushParametrized(ctx, 5, 800*1024, 1024*1024)
 }
 
 func (c *Client) PushParametrized(ctx context.Context, streams, minBatchSize, maxBatchSize int) (httpext.Response, error) {

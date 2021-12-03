@@ -51,7 +51,7 @@ func (r *Loki) XConfig(ctxPtr *context.Context, urlString string, timeoutMs int,
 		cardinalities = map[string]int{
 			"app":       5,
 			"namespace": 10,
-			"pod":       100,
+			"pod":       50,
 		}
 	}
 
