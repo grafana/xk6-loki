@@ -87,15 +87,15 @@ func (b *Batch) createJSONPushRequest() (*JSONPushRequest, int) {
 }
 
 // labelStringToMap converts a label string used by the `Batch` struct in
-// format `{label_a=value_a,label_b=value_b}` to a map that can be used in the
+// format `{label_a="value_a",label_b="value_b"}` to a map that can be used in the
 // JSON payload of push requests.
 func labelStringToMap(labels string) map[string]string {
-	kvList := strings.TrimSuffix(strings.TrimPrefix(labels, "{"), "}")
+	kvList := strings.Trim(labels, "{}")
 	kv := strings.Split(kvList, ",")
 	labelMap := make(map[string]string, len(kv))
 	for _, item := range kv {
 		parts := strings.Split(item, "=")
-		labelMap[parts[0]] = parts[1]
+		labelMap[parts[0]] = parts[1][1 : len(parts[1])-1]
 	}
 	return labelMap
 }
