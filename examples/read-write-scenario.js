@@ -86,164 +86,214 @@ export function write() {
   check(res,
     {
       'successful write': (res) => {
-        let success = res.status == 204;
+        let success = res.status === 204;
         if (!success) console.log(res.status, res.body);
         return success;
       },
     }
   );
-};
+}
+
+const createSelectorByRatio = (ratioConfig) => {
+  let ratioSum = 0;
+  const executorsIntervals = [];
+  for (let i = 0; i < ratioConfig.length; i++) {
+    executorsIntervals.push({
+      start: ratioSum,
+      end: ratioSum + ratioConfig[i].ratio,
+      item: ratioConfig[i].item,
+    })
+    ratioSum += ratioConfig[i].ratio
+  }
+  return (random) => {
+    if (random >= 1 || random < 0) {
+      fail(`random value must be within range [0-1)`)
+    }
+    const value = random * ratioSum;
+    for (let i = 0; i < executorsIntervals.length; i++) {
+      let currentInterval = executorsIntervals[i];
+      if (value < currentInterval.end && value >= currentInterval.start) {
+        return currentInterval.item
+      }
+    }
+  }
+}
+
+const queryTypeRatioConfig = [
+  {
+    ratio: 0.1,
+    item: readLabels
+  },
+  {
+    ratio: 0.1,
+    item: readLabelValues
+  },
+  {
+    ratio: 0.1,
+    item: readSeries
+  },
+  {
+    ratio: 0.5,
+    item: readRange
+  },
+  {
+    ratio: 0.2,
+    item: readInstant
+  },
+];
+
+const selectQueryTypeByRatio = createSelectorByRatio(queryTypeRatioConfig);
+
+const rangesRatioConfig = [
+  {
+    ratio: 0.2,
+    item: '15m'
+  },
+  {
+    ratio: 0.2,
+    item: '30m'
+  },
+  {
+    ratio: 0.3,
+    item: '1h'
+  },
+  {
+    ratio: 0.2,
+    item: '3h'
+  },
+  {
+    ratio: 0.1,
+    item: '12h'
+  },
+];
+
+
+const selectRangeByRatio = createSelectorByRatio(rangesRatioConfig);
 
 /**
  * Entrypoint for read scenario
  */
 export function read() {
-  let limit = 1000;
-  let duration = randomChoice(['1m', '5m', '10m', '15m']);
-
-  let labelNames = readLabels(duration);
-  if (labelNames == null || labelNames.length == 0) return;
-
-  let labelValues = readLabelValues(labelNames, duration);
-  if (labelValues == null || labelValues.length == 0) return;
-
-  let app = randomChoice(labelValues.app);
-  let namespace = randomChoice(labelValues.namespace);
-  let format = randomChoice(labelValues.format);
-  let pod = randomChoice(labelValues.pod);
-  let instance = randomChoice(labelValues.instance);
-
-  let queries = [
-    `{app="${app}"} |= "GET" != "GET"`,
-    `{namespace="${namespace}"} |~ "GET|POST"`,
-    `{format="${format}"} | json | method = "GET"`,
-    `{format="${format}"} | json | bytes > 10000`,
-  ];
-  readRange(queries, duration, limit);
-  readInstant(queries, limit);
-
-  let seriesSelector = [
-    `{app="${app}"}`,
-    `{namespace="${namespace}"}`,
-    `{format="${format}"}`,
-    `{pod="${pod}"}`,
-    `{instance="${instance}"}`,
-  ];
-  readSeries(seriesSelector, duration);
-};
+  selectQueryTypeByRatio(Math.random())();
+}
 
 /**
  * Execute labels query with given client
  */
-function readLabels(range) {
+function readLabels() {
+  const range = selectRangeByRatio(Math.random())
   let res = client.labelsQuery(range);
-  check(res, { 'successful labels query': (res) => res.status == 200 });
-  if (res.status !== 200) return null;
-
-  try {
-    let data = JSON.parse(res.body);
-    return data.data;
-  } catch (e) {
-    console.error(e);
-  }
-  return null
-};
+  check(res, {'successful labels query': (res) => res.status === 200});
+}
 
 /**
  * Execute label values query with given client
  */
-function readLabelValues(labels, range) {
-  let labelValues = {};
+function readLabelValues() {
+  const label = randomChoice(Object.keys(conf.labels))
+  const range = selectRangeByRatio(Math.random())
+  let res = client.labelValuesQuery(label, range);
+  check(res, {'successful label values query': (res) => res.status === 200});
+}
 
-  labels.forEach((label) => {
-    if (label == '__name__') return;
-    let res = client.labelValuesQuery(label, range);
-    check(res, { 'successful label values query': (res) => res.status == 200 });
-    if (res.status !== 200) return null;
+const limit = 1000;
 
-    try {
-      let data = JSON.parse(res.body);
-      labelValues[label] = data.data;
-    } catch (e) {
-      console.error(e);
-      return null;
-    }
-  });
-
-  return labelValues;
-};
+const instantQuerySuppliers = [
+  () => `rate({app="${randomChoice(conf.labels.app)}"}[5m])`,
+  () => `sum by (namespace) (rate({app="${randomChoice(conf.labels.app)}"} [5m]))`,
+  () => `sum by (namespace) (rate({app="${randomChoice(conf.labels.app)}"} |~ ".*a" [5m]))`,
+  () => `sum by (namespace) (rate({app="${randomChoice(conf.labels.app)}"} |= "USB" [5m]))`,
+  () => `sum by (status) (rate({app="${randomChoice(conf.labels.app)}"} | json | __error__ = "" [5m]))`,
+  () => `sum by (_client) (rate({app="${randomChoice(conf.labels.app)}"} | logfmt | __error__=""  | _client="" [5m]))`,
+  () => `sum by (namespace) (sum_over_time({app="${randomChoice(conf.labels.app)}"} | json | __error__ = "" | unwrap bytes [5m]))`,
+  () => `quantile_over_time(0.99, {app="${randomChoice(conf.labels.app)}"} | json | __error__ = "" | unwrap bytes [5m]) by (namespace)`,
+];
 
 /**
  * Execute instant query with given client
  */
-function readInstant(queries, limit) {
-  queries.forEach((q) => {
-    let res = client.instantQuery(q, limit);
-    check(res,
-      {
-        'successful instant query': (res) => {
-          let success = res.status == 200;
-          if (!success) console.log(res.status, res.body);
-          return success;
-        },
-      }
-    );
-  });
-};
+function readInstant() {
+  const query = randomChoice(rangeQuerySuppliers)()
+  let res = client.instantQuery(query, limit);
+  check(res,
+    {
+      'successful instant query': (res) => {
+        let success = res.status === 200;
+        if (!success) console.log(res.status, res.body);
+        return success;
+      },
+    }
+  );
+}
+
+const rangeQuerySuppliers = [
+  ...instantQuerySuppliers,
+  () => `{app="${randomChoice(conf.labels.app)}"}`,
+  () => `{app="${randomChoice(conf.labels.app)}"} |= "USB" != "USB"`,
+  () => `{app="${randomChoice(conf.labels.app)}"} |~ "US.*(a|o)"`,
+  () => `{app="${randomChoice(conf.labels.app)}", format="json"} | json | status < 300`,
+]
 
 /**
  * Execute range query with given client
  */
-function readRange(queries, duration, limit) {
-  queries.forEach((q) => {
-    let res = client.rangeQuery(q, duration, limit);
-    check(res,
-      {
-        'successful range query': (res) => {
-          let success = res.status == 200;
-          if (!success) console.log(res.status, res.body);
-          return success;
-        },
-      }
-    );
-  });
-};
+function readRange() {
+  const query = randomChoice(instantQuerySuppliers)()
+  let range = selectRangeByRatio(Math.random());
+  let res = client.rangeQuery(query, range, limit);
+  check(res,
+    {
+      'successful range query': (res) => {
+        let success = res.status === 200;
+        if (!success) console.log(res.status, res.body);
+        return success;
+      },
+    }
+  );
+}
+
+let seriesSelectorSuppliers = [
+  () => `{app="${randomChoice(conf.labels.app)}"}`,
+  () => `{namespace="${randomChoice(conf.labels.namespace)}"}`,
+  () => `{format="${randomChoice(conf.labels.format)}"}`,
+  () => `{pod="${randomChoice(conf.labels.pod)}"}`,
+];
 
 /**
  * Execute range query with given client
  */
-function readSeries(queries, duration) {
-  queries.forEach((q) => {
-    let res = client.seriesQuery(q, duration);
-    check(res,
-      {
-        'successful range query': (res) => {
-          let success = res.status == 200;
-          if (!success) console.log(res.status, res.body);
-          return success;
-        },
-      }
-    );
-  });
-};
+function readSeries() {
+  let range = selectRangeByRatio(Math.random());
+  let selector = randomChoice(seriesSelectorSuppliers)();
+  let res = client.seriesQuery(selector, range);
+  check(res,
+    {
+      'successful series query': (res) => {
+        let success = res.status === 200;
+        if (!success) console.log(res.status, res.body);
+        return success;
+      },
+    }
+  );
+}
 
 /**
  * Return an item of random choice of a list
  */
 function randomChoice(items) {
   return items[Math.floor(Math.random() * items.length)];
-};
+}
 
 /**
  * Return a random integer between min and max including min and max
  */
 function randomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1) + min);
-};
+}
 
 /**
  * Return a random float between min and max including min and max
  */
 function randomFloat(min, max) {
   return Math.random() * (max - min + 1) + min;
-};
+}
