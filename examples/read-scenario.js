@@ -27,72 +27,35 @@ const ACCESS_TOKEN = __ENV.LOKI_ACCESS_TOKEN || fail("provide LOKI_ACCESS_TOKEN 
 const BASE_URL = `https://${TENANT_ID}:${ACCESS_TOKEN}@${HOST}`;
 
 /**
- * Minimum amount of virtual users (VUs)
+ * Amount of virtual users (VUs)
  * @constant {number}
  */
-const MIN_VUS = 10
-
-/**
- * Maximum amount of virtual users (VUs)
- * @constant {number}
- */
-const MAX_VUS = 100;
-
-const KB = 1024;
-const MB = KB * KB;
+const VUS = 100;
 
 /**
  * Definition of test scenario
  */
 export const options = {
   thresholds: {
-    'http_req_failed': [{ threshold: 'rate==0.00', abortOnFail: true }],
+    'http_req_failed': [{ threshold: 'rate<=0.01', abortOnFail: true }],
   },
   scenarios: {
-    loki_write: {
-      executor: 'ramping-vus',
-      exec: 'write',
-      startVUs: MIN_VUS,
-      stages: [
-        { duration: '60s', target: MAX_VUS },
-        { duration: '60s', target: MAX_VUS },
-        { duration: '60s', target: MIN_VUS },
-      ],
-      gracefulRampDown: '10s',
-    },
-    loki_read: {
+    read: {
       executor: 'constant-vus',
       exec: 'read',
       duration: '180s',
-      vus: MAX_VUS,
+      vus: VUS,
     },
   },
 };
 
 const labelCardinality = {
   "app": 5,
-  "namespace": 10,
-  "pod": 50,
+  "namespace": 1,
+  "pod": 10,
 };
 const conf = new loki.Config(BASE_URL, 10000, 0.9, labelCardinality);
 const client = new loki.Client(conf);
-
-/**
- * Entrypoint for write scenario
- */
-export function write() {
-  let streams = randomInt(4, 8);
-  let res = client.pushParametrized(streams, 800 * KB, 1 * MB);
-  check(res,
-    {
-      'successful write': (res) => {
-        let success = res.status === 204;
-        if (!success) console.log(res.status, res.body);
-        return success;
-      },
-    }
-  );
-}
 
 const createSelectorByRatio = (ratioConfig) => {
   let ratioSum = 0;
@@ -166,7 +129,6 @@ const rangesRatioConfig = [
     item: '12h'
   },
 ];
-
 
 const selectRangeByRatio = createSelectorByRatio(rangesRatioConfig);
 
@@ -282,18 +244,4 @@ function readSeries() {
  */
 function randomChoice(items) {
   return items[Math.floor(Math.random() * items.length)];
-}
-
-/**
- * Return a random integer between min and max including min and max
- */
-function randomInt(min, max) {
-  return Math.floor(Math.random() * (max - min + 1) + min);
-}
-
-/**
- * Return a random float between min and max including min and max
- */
-function randomFloat(min, max) {
-  return Math.random() * (max - min + 1) + min;
 }
