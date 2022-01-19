@@ -52,9 +52,9 @@ export const options = {
 const labelCardinality = {
   "app": 5,
   "namespace": 1,
-  "pod": 10,
+  "pod": 5,
 };
-const conf = new loki.Config(BASE_URL, 10000, 0.9, labelCardinality);
+const conf = new loki.Config(BASE_URL, 60000, 0.9, labelCardinality);
 const client = new loki.Client(conf);
 
 const createSelectorByRatio = (ratioConfig) => {
@@ -143,19 +143,26 @@ export function read() {
  * Execute labels query with given client
  */
 function readLabels() {
+  // Randomly select the range.
   const range = selectRangeByRatio(Math.random())
+  // Execute query.
   let res = client.labelsQuery(range);
-  check(res, {'successful labels query': (res) => res.status === 200});
+  // Assert the response from loki.
+  checkResponse(res, "successful labels query", range);
 }
 
 /**
  * Execute label values query with given client
  */
 function readLabelValues() {
-  const label = randomChoice(Object.keys(conf.labels))
-  const range = selectRangeByRatio(Math.random())
+  // Randomly select label name from pull of the labels.
+  const label = randomChoice(Object.keys(conf.labels));
+  // Randomly select the range.
+  const range = selectRangeByRatio(Math.random());
+  // Execute query.
   let res = client.labelValuesQuery(label, range);
-  check(res, {'successful label values query': (res) => res.status === 200});
+  // Assert the response from loki.
+  checkResponse(res, "successful label values query", range);
 }
 
 const limit = 1000;
@@ -175,17 +182,13 @@ const instantQuerySuppliers = [
  * Execute instant query with given client
  */
 function readInstant() {
-  const query = randomChoice(rangeQuerySuppliers)()
+  // Randomly select the query supplier from the pool
+  // and call the supplier that provides prepared query.
+  const query = randomChoice(instantQuerySuppliers)();
+  // Execute query.
   let res = client.instantQuery(query, limit);
-  check(res,
-    {
-      'successful instant query': (res) => {
-        let success = res.status === 200;
-        if (!success) console.log(res.status, res.body);
-        return success;
-      },
-    }
-  );
+  // Assert the response from loki.
+  checkResponse(res, "successful instant query");
 }
 
 const rangeQuerySuppliers = [
@@ -200,18 +203,15 @@ const rangeQuerySuppliers = [
  * Execute range query with given client
  */
 function readRange() {
-  const query = randomChoice(instantQuerySuppliers)()
+  // Randomly select the query supplier from the pool
+  // and call the supplier that provides prepared query.
+  const query = randomChoice(rangeQuerySuppliers)();
+  // Randomly select the range.
   let range = selectRangeByRatio(Math.random());
+  // Execute query.
   let res = client.rangeQuery(query, range, limit);
-  check(res,
-    {
-      'successful range query': (res) => {
-        let success = res.status === 200;
-        if (!success) console.log(res.status, res.body);
-        return success;
-      },
-    }
-  );
+  // Assert the response from loki.
+  checkResponse(res, "successful range query", range);
 }
 
 let seriesSelectorSuppliers = [
@@ -222,21 +222,31 @@ let seriesSelectorSuppliers = [
 ];
 
 /**
- * Execute range query with given client
+ * Execute series query with given client
  */
 function readSeries() {
+  // Randomly select the range.
   let range = selectRangeByRatio(Math.random());
+  // Randomly select the series selector from the pool of selectors.
   let selector = randomChoice(seriesSelectorSuppliers)();
+  // Execute query.
   let res = client.seriesQuery(selector, range);
-  check(res,
-    {
-      'successful series query': (res) => {
-        let success = res.status === 200;
-        if (!success) console.log(res.status, res.body);
-        return success;
-      },
+  // Assert the response from loki.
+  checkResponse(res, "successful series query", range);
+}
+
+
+const checkResponse = (response, name, range) => {
+  const checkName = `${name}[${range}]`;
+  const assertion = {};
+  assertion[range ? checkName : name] = (res) => {
+    let success = res.status === 200;
+    if (!success) {
+      console.log(res.status, res.body);
     }
-  );
+    return success;
+  };
+  check(response, assertion);
 }
 
 /**
