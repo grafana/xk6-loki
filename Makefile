@@ -1,10 +1,11 @@
 PWD := $(shell pwd)
 GO_FILES := $(shell find . -type f -name "*.go" -print)
+K6_VERSION = v0.35.0
 
 .PHONY: run
 
 k6: $(GO_FILES)
-	xk6 build \
+	K6_VERSION=$(K6_VERSION) xk6 build \
 		--replace "github.com/mingrammer/flog=github.com/chaudum/flog@v0.4.4-0.20211115125504-92153be038e6" \
 	  --with "github.com/grafana/xk6-loki=$(PWD)"
 
