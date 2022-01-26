@@ -124,15 +124,15 @@ func buildURL(u, p, qs string) (string, error) {
 func (c *Client) sendQuery(ctx context.Context, q *Query) (httpext.Response, error) {
 	state := lib.GetState(ctx)
 	if state == nil {
-		return *httpext.NewResponse(ctx), errors.New("state is nil")
+		return *httpext.NewResponse(), errors.New("state is nil")
 	}
 
-	httpResp := httpext.NewResponse(ctx)
+	httpResp := httpext.NewResponse()
 	path := q.Endpoint()
 
 	urlString, err := buildURL(c.cfg.URL.String(), path, q.Values().Encode())
 	if err != nil {
-		return *httpext.NewResponse(ctx), err
+		return *httpext.NewResponse(), err
 	}
 
 	r, err := http.NewRequest(http.MethodGet, urlString, nil)
@@ -149,7 +149,7 @@ func (c *Client) sendQuery(ctx context.Context, q *Query) (httpext.Response, err
 	}
 
 	url, _ := httpext.NewURL(urlString, path)
-	response, err := httpext.MakeRequest(ctx, &httpext.ParsedHTTPRequest{
+	response, err := httpext.MakeRequest(ctx, state, &httpext.ParsedHTTPRequest{
 		URL:              &url,
 		Req:              r,
 		Throw:            state.Options.Throw.Bool,
@@ -178,7 +178,7 @@ func (c *Client) PushParametrized(ctx context.Context, streams, minBatchSize, ma
 func (c *Client) pushBatch(ctx context.Context, batch *Batch) (httpext.Response, error) {
 	state := lib.GetState(ctx)
 	if state == nil {
-		return *httpext.NewResponse(ctx), errors.New("state is nil")
+		return *httpext.NewResponse(), errors.New("state is nil")
 	}
 
 	var buf []byte
@@ -193,12 +193,12 @@ func (c *Client) pushBatch(ctx context.Context, batch *Batch) (httpext.Response,
 		buf, _, err = batch.encodeJSON()
 	}
 	if err != nil {
-		return *httpext.NewResponse(ctx), errors.Wrap(err, "failed to encode payload")
+		return *httpext.NewResponse(), errors.Wrap(err, "failed to encode payload")
 	}
 
 	res, err := c.send(ctx, state, buf, encodeSnappy)
 	if err != nil {
-		return *httpext.NewResponse(ctx), errors.Wrap(err, "push request failed")
+		return *httpext.NewResponse(), errors.Wrap(err, "push request failed")
 	}
 	res.Request.Body = ""
 
@@ -206,7 +206,7 @@ func (c *Client) pushBatch(ctx context.Context, batch *Batch) (httpext.Response,
 }
 
 func (c *Client) send(ctx context.Context, state *lib.State, buf []byte, useProtobuf bool) (httpext.Response, error) {
-	httpResp := httpext.NewResponse(ctx)
+	httpResp := httpext.NewResponse()
 	path := "/loki/api/v1/push"
 	r, err := http.NewRequest(http.MethodPost, c.cfg.URL.String()+path, nil)
 	if err != nil {
@@ -228,7 +228,7 @@ func (c *Client) send(ctx context.Context, state *lib.State, buf []byte, useProt
 	}
 
 	url, _ := httpext.NewURL(c.cfg.URL.String()+path, path)
-	response, err := httpext.MakeRequest(ctx, &httpext.ParsedHTTPRequest{
+	response, err := httpext.MakeRequest(ctx, state, &httpext.ParsedHTTPRequest{
 		URL:              &url,
 		Req:              r,
 		Body:             bytes.NewBuffer(buf),
