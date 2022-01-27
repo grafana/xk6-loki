@@ -10,8 +10,8 @@ import (
 	"path"
 	"time"
 
-	"github.com/go-kit/log"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/lib/netext/httpext"
 )
@@ -27,7 +27,7 @@ const (
 
 type Client struct {
 	client *http.Client
-	logger log.Logger
+	logger logrus.FieldLogger
 	cfg    *Config
 }
 
@@ -167,10 +167,16 @@ func (c *Client) sendQuery(ctx context.Context, q *Query) (httpext.Response, err
 func (c *Client) Push(ctx context.Context) (httpext.Response, error) {
 	// 5 streams per batch
 	// batch size between 800KB and 1MB
-	return c.PushParametrized(ctx, 5, 800*1024, 1024*1024)
+	return c.PushParameterized(ctx, 5, 800*1024, 1024*1024)
 }
 
+// PushParametrized is deprecated in favor or PushParameterized
 func (c *Client) PushParametrized(ctx context.Context, streams, minBatchSize, maxBatchSize int) (httpext.Response, error) {
+	c.logger.Warn("method pushParametrized() is deprecated and will be removed in future releases; please use pushParameterized() instead")
+	return c.PushParameterized(ctx, streams, minBatchSize, maxBatchSize)
+}
+
+func (c *Client) PushParameterized(ctx context.Context, streams, minBatchSize, maxBatchSize int) (httpext.Response, error) {
 	batch := newBatch(ctx, c.cfg.Labels, streams, minBatchSize, maxBatchSize)
 	return c.pushBatch(ctx, batch)
 }
