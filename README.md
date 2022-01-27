@@ -75,9 +75,9 @@ let client = loki.Client(conf);
 
 #### Method `client.push()`
 
-This function is a shortcut for `client.pushRandomized(5, 800*1024, 1024*1024)`.
+This function is a shortcut for `client.pushParametrized(5, 800*1024, 1024*1024)`.
 
-#### Method `client.pushRandomized(streams, minSize, maxSize)`
+#### Method `client.pushParametrized(streams, minSize, maxSize)`
 
 Execute a push request ([POST /loki/api/v1/push](https://grafana.com/docs/loki/latest/api/#post-lokiapiv1push)).
 
