@@ -98,9 +98,11 @@ func (r *Loki) XConfig(ctxPtr *context.Context, urlString string, timeoutMs int,
 // ```
 func (r *Loki) XClient(ctxPtr *context.Context, config Config) interface{} {
 	rt := common.GetRuntime(*ctxPtr)
+	logger := common.GetInitEnv(*ctxPtr).Logger
 	return common.Bind(rt, &Client{
 		client: &http.Client{},
 		cfg:    &config,
+		logger: logger,
 	}, ctxPtr)
 }
 

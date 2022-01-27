@@ -35,7 +35,7 @@ export const options = {
 };
 
 export default () => {
-  var res = client.pushParametrized(2, 500 * KB, 1 * MB);
+  var res = client.pushParameterized(2, 500 * KB, 1 * MB);
   check(res, { 'successful write': (res) => res.status == 204 });
   sleep(1);
 }

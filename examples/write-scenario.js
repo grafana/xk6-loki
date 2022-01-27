@@ -79,7 +79,7 @@ const client = new loki.Client(conf);
  */
 export function write() {
   let streams = randomInt(4, 8);
-  let res = client.pushParametrized(streams, 800 * KB, 1 * MB);
+  let res = client.pushParameterized(streams, 800 * KB, 1 * MB);
   check(res,
     {
       'successful write': (res) => {

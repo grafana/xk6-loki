@@ -75,13 +75,13 @@ let client = loki.Client(conf);
 
 #### Method `client.push()`
 
-This function is a shortcut for `client.pushParametrized(5, 800*1024, 1024*1024)`.
+This function is a shortcut for `client.pushParameterized(5, 800*1024, 1024*1024)`.
 
-#### Method `client.pushParametrized(streams, minSize, maxSize)`
+#### Method `client.pushParameterized(streams, minSize, maxSize)`
 
 Execute a push request ([POST /loki/api/v1/push](https://grafana.com/docs/loki/latest/api/#post-lokiapiv1push)).
 
-The function `pushRandomized` generates batch of logs and pushes it to the Loki instance.
+The function `pushParameterized` generates batch of logs and pushes it to the Loki instance.
 A batch consists of one or more streams which hold multiple log lines.
 A stream is a set of log lines with a unique set of labels.
 
@@ -219,7 +219,7 @@ const client = new loki.Client(conf);
 
 export default () => {
   // Push a batch of 2 streams with a payload size between 500KB and 1MB
-  let res = client.pushParametrized(2, 512 * 1024, 1024 * 1024);
+  let res = client.pushParameterized(2, 512 * 1024, 1024 * 1024);
   // A successful push request returns HTTP status 204
   check(res, { 'successful write': (res) => res.status == 204 });
   sleep(1);
