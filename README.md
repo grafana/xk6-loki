@@ -14,7 +14,7 @@
 1. Checkout `grafana/xk6-loki`
 
    ```bash
-   git clone github.com/grafana/xk6-loki
+   git clone https://github.com/grafana/xk6-loki
    cd xk6-loki
    ```
 
