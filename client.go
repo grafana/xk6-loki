@@ -3,6 +3,7 @@ package loki
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -10,10 +11,12 @@ import (
 	"path"
 	"time"
 
+	"github.com/grafana/loki/pkg/logql/stats"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/lib/netext/httpext"
+	k6_stats "go.k6.io/k6/stats"
 )
 
 const (
@@ -23,6 +26,11 @@ const (
 	ContentEncodingGzip   = "gzip"
 
 	TenantPrefix = "xk6-tenant"
+)
+
+var (
+	BytesProcessedPerSecondsSummary = k6_stats.New("loki_bytes_precessed_per_second_summary", k6_stats.Trend, k6_stats.Data)
+	LinesProcessedPerSecondsSummary = k6_stats.New("loki_lines_precessed_per_second_summary", k6_stats.Trend, k6_stats.Default)
 )
 
 type Client struct {
@@ -47,7 +55,11 @@ func (c *Client) InstantQuery(ctx context.Context, logQuery string, limit int) (
 		Limit:       limit,
 	}
 	q.SetInstant(time.Now())
-	return c.sendQuery(ctx, q)
+	response, err := c.sendQuery(ctx, q)
+	if err == nil && IsSuccessfulResponse(response.Status) {
+		err = reportMetricsFromStats(ctx, response, InstantQuery)
+	}
+	return response, err
 }
 
 func (c *Client) RangeQuery(ctx context.Context, logQuery string, duration string, limit int) (httpext.Response, error) {
@@ -63,7 +75,11 @@ func (c *Client) RangeQuery(ctx context.Context, logQuery string, duration strin
 		End:         now,
 		Limit:       limit,
 	}
-	return c.sendQuery(ctx, q)
+	response, err := c.sendQuery(ctx, q)
+	if err == nil && IsSuccessfulResponse(response.Status) {
+		err = reportMetricsFromStats(ctx, response, RangeQuery)
+	}
+	return response, err
 }
 
 func (c *Client) LabelsQuery(ctx context.Context, duration string) (httpext.Response, error) {
@@ -155,7 +171,7 @@ func (c *Client) sendQuery(ctx context.Context, q *Query) (httpext.Response, err
 		Throw:            state.Options.Throw.Bool,
 		Redirects:        state.Options.MaxRedirects,
 		Timeout:          c.cfg.Timeout,
-		ResponseCallback: ResponseCallback,
+		ResponseCallback: IsSuccessfulResponse,
 	})
 	if err != nil {
 		return *httpResp, err
@@ -241,7 +257,7 @@ func (c *Client) send(ctx context.Context, state *lib.State, buf []byte, useProt
 		Throw:            state.Options.Throw.Bool,
 		Redirects:        state.Options.MaxRedirects,
 		Timeout:          c.cfg.Timeout,
-		ResponseCallback: ResponseCallback,
+		ResponseCallback: IsSuccessfulResponse,
 	})
 	if err != nil {
 		return *httpResp, err
@@ -250,7 +266,43 @@ func (c *Client) send(ctx context.Context, state *lib.State, buf []byte, useProt
 	return *response, err
 }
 
-func ResponseCallback(n int) bool {
+func IsSuccessfulResponse(n int) bool {
 	// report all 2xx respones as successful requests
 	return n/100 == 2
+}
+
+type responseWithStats struct {
+	Data struct {
+		Stats stats.Result
+	}
+}
+
+func reportMetricsFromStats(ctx context.Context, response httpext.Response, queryType QueryType) error {
+	responseBody, ok := response.Body.(string)
+	if !ok {
+		return errors.New("response body is not a string")
+	}
+	responseWithStats := responseWithStats{}
+	err := json.Unmarshal([]byte(responseBody), &responseWithStats)
+	if err != nil {
+		return errors.Wrap(err, "error unmarshalling response body to response with stats")
+	}
+	now := time.Now()
+	k6_stats.PushIfNotDone(ctx, lib.GetState(ctx).Samples, k6_stats.ConnectedSamples{
+		Samples: []k6_stats.Sample{
+			{
+				Metric: BytesProcessedPerSecondsSummary,
+				Tags:   k6_stats.NewSampleTags(map[string]string{"endpoint": queryType.Endpoint()}),
+				Value:  float64(responseWithStats.Data.Stats.Summary.BytesProcessedPerSecond),
+				Time:   now,
+			},
+			{
+				Metric: LinesProcessedPerSecondsSummary,
+				Tags:   k6_stats.NewSampleTags(map[string]string{"method": queryType.Endpoint()}),
+				Value:  float64(responseWithStats.Data.Stats.Summary.LinesProcessedPerSecond),
+				Time:   now,
+			},
+		},
+	})
+	return nil
 }
