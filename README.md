@@ -165,6 +165,26 @@ Execute a series query ([GET /loki/api/v1/series](https://grafana.com/docs/loki/
 
 The total amount of different streams is defined by the carthesian product of all label values. Keep in mind that high cardinality impacts the performance of the Loki instance.
 
+## Metrics
+
+The extension collects metrics that are printed in the
+[end-of-test summary](https://k6.io/docs/results-visualization/end-of-test-summary/) in addition to the built-in metrics.
+
+### Query metrics
+These metrics are collected only for instant and range queries.
+
+| name | description                                 |
+| ---- |---------------------------------------------|
+| `loki_bytes_precessed_per_second_summary` | Total of bytes processed by Loki per second |
+| `loki_lines_precessed_per_second_summary` | Total lines processed by Loki per second    |
+
+### Write metrics
+
+| name | description |
+| ---- | ----------- |
+| `loki_client_uncompressed_bytes` | the quantity of uncompressed log data pushed to Loki, in bytes |
+| `loki_client_lines` | the number of log lines pushed to Loki |
+
 ## Example
 
 ```js
