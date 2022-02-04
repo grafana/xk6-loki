@@ -29,8 +29,8 @@ const (
 )
 
 var (
-	BytesProcessedPerSecondsSummary = k6_stats.New("loki_bytes_precessed_per_second_summary", k6_stats.Trend, k6_stats.Data)
-	LinesProcessedPerSecondsSummary = k6_stats.New("loki_lines_precessed_per_second_summary", k6_stats.Trend, k6_stats.Default)
+	BytesProcessedPerSeconds = k6_stats.New("loki_bytes_precessed_per_second", k6_stats.Trend, k6_stats.Data)
+	LinesProcessedPerSeconds = k6_stats.New("loki_lines_precessed_per_second", k6_stats.Trend, k6_stats.Default)
 )
 
 type Client struct {
@@ -288,17 +288,18 @@ func reportMetricsFromStats(ctx context.Context, response httpext.Response, quer
 		return errors.Wrap(err, "error unmarshalling response body to response with stats")
 	}
 	now := time.Now()
+	tags := k6_stats.NewSampleTags(map[string]string{"endpoint": queryType.Endpoint()})
 	k6_stats.PushIfNotDone(ctx, lib.GetState(ctx).Samples, k6_stats.ConnectedSamples{
 		Samples: []k6_stats.Sample{
 			{
-				Metric: BytesProcessedPerSecondsSummary,
-				Tags:   k6_stats.NewSampleTags(map[string]string{"endpoint": queryType.Endpoint()}),
+				Metric: BytesProcessedPerSeconds,
+				Tags:   tags,
 				Value:  float64(responseWithStats.Data.Stats.Summary.BytesProcessedPerSecond),
 				Time:   now,
 			},
 			{
-				Metric: LinesProcessedPerSecondsSummary,
-				Tags:   k6_stats.NewSampleTags(map[string]string{"method": queryType.Endpoint()}),
+				Metric: LinesProcessedPerSeconds,
+				Tags:   tags,
 				Value:  float64(responseWithStats.Data.Stats.Summary.LinesProcessedPerSecond),
 				Time:   now,
 			},
