@@ -173,10 +173,10 @@ The extension collects metrics that are printed in the
 ### Query metrics
 These metrics are collected only for instant and range queries.
 
-| name | description                                 |
-| ---- |---------------------------------------------|
-| `loki_bytes_precessed_per_second_summary` | Total of bytes processed by Loki per second |
-| `loki_lines_precessed_per_second_summary` | Total lines processed by Loki per second    |
+| name                              | description                                  |
+|-----------------------------------|----------------------------------------------|
+| `loki_bytes_processed_per_second` | amount of bytes processed by Loki per second |
+| `loki_lines_processed_per_second` | amount of lines processed by Loki per second |
 
 ### Write metrics
 

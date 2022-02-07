@@ -29,8 +29,8 @@ const (
 )
 
 var (
-	BytesProcessedPerSeconds = k6_stats.New("loki_bytes_precessed_per_second", k6_stats.Trend, k6_stats.Data)
-	LinesProcessedPerSeconds = k6_stats.New("loki_lines_precessed_per_second", k6_stats.Trend, k6_stats.Default)
+	BytesProcessedPerSeconds = k6_stats.New("loki_bytes_processed_per_second", k6_stats.Trend, k6_stats.Data)
+	LinesProcessedPerSeconds = k6_stats.New("loki_lines_processed_per_second", k6_stats.Trend, k6_stats.Default)
 )
 
 type Client struct {
