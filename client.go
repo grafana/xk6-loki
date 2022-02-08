@@ -29,7 +29,9 @@ const (
 )
 
 var (
+	BytesProcessedTotal      = k6_stats.New("loki_bytes_processed_total", k6_stats.Counter, k6_stats.Data)
 	BytesProcessedPerSeconds = k6_stats.New("loki_bytes_processed_per_second", k6_stats.Trend, k6_stats.Data)
+	LinesProcessedTotal      = k6_stats.New("loki_lines_processed_total", k6_stats.Counter, k6_stats.Default)
 	LinesProcessedPerSeconds = k6_stats.New("loki_lines_processed_per_second", k6_stats.Trend, k6_stats.Default)
 )
 
@@ -292,9 +294,21 @@ func reportMetricsFromStats(ctx context.Context, response httpext.Response, quer
 	k6_stats.PushIfNotDone(ctx, lib.GetState(ctx).Samples, k6_stats.ConnectedSamples{
 		Samples: []k6_stats.Sample{
 			{
+				Metric: BytesProcessedTotal,
+				Tags:   tags,
+				Value:  float64(responseWithStats.Data.Stats.Summary.TotalBytesProcessed),
+				Time:   now,
+			},
+			{
 				Metric: BytesProcessedPerSeconds,
 				Tags:   tags,
 				Value:  float64(responseWithStats.Data.Stats.Summary.BytesProcessedPerSecond),
+				Time:   now,
+			},
+			{
+				Metric: LinesProcessedTotal,
+				Tags:   tags,
+				Value:  float64(responseWithStats.Data.Stats.Summary.TotalLinesProcessed),
 				Time:   now,
 			},
 			{
