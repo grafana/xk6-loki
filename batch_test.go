@@ -16,7 +16,6 @@ func BenchmarkNewBatch(b *testing.B) {
 		VUID:    15,
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	ctx = lib.WithState(ctx, state)
 
 	defer cancel()
 	defer close(samples)
@@ -36,7 +35,7 @@ func BenchmarkNewBatch(b *testing.B) {
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		_ = newBatch(ctx, labels, streams, minBatchSize, maxBatchSize)
+		_ = newBatch(ctx, state, labels, streams, minBatchSize, maxBatchSize)
 	}
 }
 
@@ -47,7 +46,6 @@ func BenchmarkEncode(b *testing.B) {
 		VUID:    15,
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	ctx = lib.WithState(ctx, state)
 
 	defer cancel()
 	defer close(samples)
@@ -65,7 +63,7 @@ func BenchmarkEncode(b *testing.B) {
 	labels := newLabelPool(faker, cardinalities)
 
 	b.ReportAllocs()
-	batch := newBatch(ctx, labels, streams, minBatchSize, maxBatchSize)
+	batch := newBatch(ctx, state, labels, streams, minBatchSize, maxBatchSize)
 
 	b.Run("encode protobuf", func(b *testing.B) {
 		b.ResetTimer()

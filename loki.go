@@ -2,13 +2,13 @@
 package loki
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"time"
 
 	gofakeit "github.com/brianvoe/gofakeit/v6"
+	"github.com/dop251/goja"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/stats"
@@ -31,17 +31,52 @@ var (
 //
 // See examples/simple.js for a full example how to use the xk6-loki extension.
 func init() {
-	modules.Register("k6/x/loki", new(Loki))
+	modules.Register("k6/x/loki", new(LokiRoot))
 }
 
-// Loki is the k6 extension that can be imported in the Javascript test file.
-type Loki struct{}
+var _ modules.Module = &LokiRoot{}
 
-// XConfig provides a constructor interface for the Config for the Javascript runtime
+// LokiRoot is the root module
+type LokiRoot struct{}
+
+// Loki is the k6 extension that can be imported in the Javascript test file.
+type Loki struct {
+	vu modules.VU
+}
+
+func (lr *LokiRoot) NewModuleInstance(vu modules.VU) modules.Instance {
+	return &Loki{
+		vu: vu,
+	}
+}
+
+func (r *Loki) Exports() modules.Exports {
+	return modules.Exports{
+
+		Named: map[string]interface{}{
+			"Config":    r.config,
+			"Client":    r.client,
+			"getLables": r.getLabels,
+		},
+	}
+}
+
+// config provides a constructor interface for the Config for the Javascript runtime
 // ```js
 // const cfg = new loki.Config(url);
 // ```
-func (r *Loki) XConfig(ctxPtr *context.Context, urlString string, timeoutMs int, protobufRatio float64, cardinalities map[string]int) interface{} {
+func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
+	// func(urlString string, timeoutMs int, protobufRatio float64, cardinalities map[string]int) interface{} {
+	urlString := c.Argument(0).String()
+	timeoutMs := int(c.Argument(1).ToInteger())
+	protobufRatio := c.Argument(2).ToFloat()
+	var cardinalities map[string]int
+	rt := r.vu.Runtime()
+	err := rt.ExportTo(c.Argument(3), &cardinalities)
+	if err != nil {
+		common.Throw(rt, fmt.Errorf("Config constructor expects map of string to integers as forth argument"))
+	}
+
 	if timeoutMs == 0 {
 		timeoutMs = DefaultPushTimeout
 	}
@@ -56,7 +91,7 @@ func (r *Loki) XConfig(ctxPtr *context.Context, urlString string, timeoutMs int,
 		}
 	}
 
-	logger := common.GetInitEnv(*ctxPtr).Logger
+	logger := r.vu.InitEnv().Logger
 	logger.Debug(fmt.Sprintf("url=%s timeoutMs=%d protobufRatio=%f cardinalities=%v", urlString, timeoutMs, protobufRatio, cardinalities))
 
 	faker := gofakeit.New(12345)
@@ -65,7 +100,6 @@ func (r *Loki) XConfig(ctxPtr *context.Context, urlString string, timeoutMs int,
 	if err != nil {
 		panic(err)
 	}
-	rt := common.GetRuntime(*ctxPtr)
 
 	if timeoutMs == 0 {
 		timeoutMs = DefaultPushTimeout
@@ -75,38 +109,38 @@ func (r *Loki) XConfig(ctxPtr *context.Context, urlString string, timeoutMs int,
 	}
 
 	if u.User.Username() == "" {
-		logger := common.GetInitEnv(*ctxPtr).Logger
 		logger.Warn("Running in multi-tenant-mode. Each VU has its own X-Scope-OrgID")
 	}
 
-	return common.Bind(
-		rt,
-		&Config{
-			URL:           *u,
-			UserAgent:     DefaultUserAgent,
-			TenantID:      u.User.Username(),
-			Timeout:       time.Duration(timeoutMs) * time.Millisecond,
-			Labels:        newLabelPool(faker, cardinalities),
-			ProtobufRatio: protobufRatio,
-		},
-		ctxPtr)
+	cfg := &Config{
+		URL:           *u,
+		UserAgent:     DefaultUserAgent,
+		TenantID:      u.User.Username(),
+		Timeout:       time.Duration(timeoutMs) * time.Millisecond,
+		Labels:        newLabelPool(faker, cardinalities),
+		ProtobufRatio: protobufRatio,
+	}
+
+	return rt.ToValue(cfg).ToObject(rt)
 }
 
-// XClient provides a constructor interface for the Config for the Javascript runtime
+// client provides a constructor interface for the Config for the Javascript runtime
 // ```js
 // const client = new loki.Client(cfg);
 // ```
-func (r *Loki) XClient(ctxPtr *context.Context, config Config) interface{} {
-	rt := common.GetRuntime(*ctxPtr)
-	logger := common.GetInitEnv(*ctxPtr).Logger
-	return common.Bind(rt, &Client{
+func (r *Loki) client(c goja.ConstructorCall) *goja.Object {
+	rt := r.vu.Runtime()
+	config, ok := c.Argument(0).Export().(*Config)
+	if !ok {
+		common.Throw(rt, fmt.Errorf("Client constructor expect Config as it's argument"))
+	}
+	return rt.ToValue(&Client{
 		client: &http.Client{},
-		cfg:    &config,
-		logger: logger,
-	}, ctxPtr)
+		cfg:    config,
+		vu:     r.vu,
+	}).ToObject(rt)
 }
 
-func (r *Loki) GetLabels(ctxPtr *context.Context, config Config) interface{} {
-	rt := common.GetRuntime(*ctxPtr)
-	return common.Bind(rt, &config.Labels, ctxPtr)
+func (r *Loki) getLabels(config Config) interface{} {
+	return &config.Labels
 }

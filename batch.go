@@ -129,13 +129,13 @@ func (b *Batch) createPushRequest() (*logproto.PushRequest, int) {
 }
 
 // newBatch creates a batch with randomly generated log streams
-func newBatch(ctx context.Context, pool LabelPool, numStreams, minBatchSize, maxBatchSize int) *Batch {
+func newBatch(
+	ctx context.Context, state *lib.State, pool LabelPool, numStreams, minBatchSize, maxBatchSize int,
+) *Batch {
 	batch := &Batch{
 		Streams:   make(map[string]*logproto.Stream, numStreams),
 		CreatedAt: time.Now(),
 	}
-	state := lib.GetState(ctx)
-
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "localhost"
