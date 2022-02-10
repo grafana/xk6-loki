@@ -4,7 +4,8 @@ go 1.16
 
 require (
 	github.com/brianvoe/gofakeit/v6 v6.9.0
-	github.com/go-kit/log v0.2.0
+	github.com/dop251/goja v0.0.0-20220110113543-261677941f3c
+	github.com/go-logfmt/logfmt v0.5.1 // indirect
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/snappy v0.0.3
 	github.com/grafana/loki v1.6.1
@@ -12,6 +13,7 @@ require (
 	github.com/mingrammer/flog v0.4.3
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.10.0
+	github.com/sirupsen/logrus v1.8.1
 	go.k6.io/k6 v0.36.0
 )
 
