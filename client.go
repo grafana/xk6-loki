@@ -46,28 +46,21 @@ type Config struct {
 }
 
 func (c *Client) InstantQuery(logQuery string, limit int) (httpext.Response, error) {
-	q := &Query{
-		Type:        InstantQuery,
-		QueryString: logQuery,
-		Limit:       limit,
-	}
-	q.SetInstant(time.Now())
-	response, err := c.sendQuery(q)
-	if err == nil && IsSuccessfulResponse(response.Status) {
-		err = c.reportMetricsFromStats(response, InstantQuery)
-	}
-	return response, err
+	return c.instantQuery(logQuery, limit, time.Now())
 }
 
 func (c *Client) InstantQueryAt(logQuery string, limit int, instant int64) (httpext.Response, error) {
+	return c.instantQuery(logQuery, limit, time.Unix(instant, 0))
+}
+
+func (c *Client) instantQuery(logQuery string, limit int, now time.Time) (httpext.Response, error) {
 	q := &Query{
 		Type:        InstantQuery,
 		QueryString: logQuery,
 		Limit:       limit,
 	}
 
-	u := time.Unix(instant, 0)
-	q.SetInstant(u)
+	q.SetInstant(now)
 	response, err := c.sendQuery(q)
 	if err == nil && IsSuccessfulResponse(response.Status) {
 		err = c.reportMetricsFromStats(response, InstantQuery)
@@ -76,7 +69,14 @@ func (c *Client) InstantQueryAt(logQuery string, limit int, instant int64) (http
 }
 
 func (c *Client) RangeQuery(logQuery string, duration string, limit int) (httpext.Response, error) {
-	now := time.Now()
+	return c.rangeQuery(logQuery, duration, limit, time.Now())
+}
+
+func (c *Client) RangeQueryAt(logQuery string, duration string, limit int, instant int64) (httpext.Response, error) {
+	return c.rangeQuery(logQuery, duration, limit, time.Unix(instant, 0))
+}
+
+func (c *Client) rangeQuery(logQuery string, duration string, limit int, now time.Time) (httpext.Response, error) {
 	dur, err := time.ParseDuration(duration)
 	if err != nil {
 		return httpext.Response{}, err
