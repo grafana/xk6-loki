@@ -63,6 +63,22 @@ func (c *Client) InstantQuery(logQuery string, limit int) (httpext.Response, err
 	return response, err
 }
 
+func (c *Client) InstantQueryAt(logQuery string, limit int, instant int64) (httpext.Response, error) {
+	q := &Query{
+		Type:        InstantQuery,
+		QueryString: logQuery,
+		Limit:       limit,
+	}
+
+	u := time.Unix(instant, 0)
+	q.SetInstant(u)
+	response, err := c.sendQuery(q)
+	if err == nil && IsSuccessfulResponse(response.Status) {
+		err = c.reportMetricsFromStats(response, InstantQuery)
+	}
+	return response, err
+}
+
 func (c *Client) RangeQuery(logQuery string, duration string, limit int) (httpext.Response, error) {
 	now := time.Now()
 	dur, err := time.ParseDuration(duration)
