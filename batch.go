@@ -15,7 +15,7 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/mingrammer/flog/flog"
 	"github.com/prometheus/common/model"
-	"go.k6.io/k6/stats"
+	"go.k6.io/k6/metrics"
 )
 
 type FakeFunc func() string
@@ -164,17 +164,17 @@ func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize
 
 	now := time.Now() // TODO move this in the send
 	ctx := c.vu.Context()
-	stats.PushIfNotDone(ctx, state.Samples, stats.ConnectedSamples{
-		Samples: []stats.Sample{
+	metrics.PushIfNotDone(ctx, state.Samples, metrics.ConnectedSamples{
+		Samples: []metrics.Sample{
 			{
 				Metric: c.metrics.ClientUncompressedBytes,
-				Tags:   &stats.SampleTags{},
+				Tags:   &metrics.SampleTags{},
 				Value:  float64(batch.Bytes),
 				Time:   now,
 			},
 			{
 				Metric: c.metrics.ClientLines,
-				Tags:   &stats.SampleTags{},
+				Tags:   &metrics.SampleTags{},
 				Value:  float64(lines),
 				Time:   now,
 			},

@@ -7,11 +7,11 @@ import (
 	gofakeit "github.com/brianvoe/gofakeit/v6"
 	"go.k6.io/k6/js/modulestest"
 	"go.k6.io/k6/lib"
-	"go.k6.io/k6/stats"
+	"go.k6.io/k6/metrics"
 )
 
 func BenchmarkNewBatch(b *testing.B) {
-	samples := make(chan stats.SampleContainer)
+	samples := make(chan metrics.SampleContainer)
 	state := &lib.State{
 		Samples: samples,
 		VUID:    15,
@@ -48,7 +48,7 @@ func BenchmarkNewBatch(b *testing.B) {
 }
 
 func BenchmarkEncode(b *testing.B) {
-	samples := make(chan stats.SampleContainer)
+	samples := make(chan metrics.SampleContainer)
 	state := &lib.State{
 		Samples: samples,
 		VUID:    15,

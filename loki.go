@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/js/modules"
-	"go.k6.io/k6/stats"
+	"go.k6.io/k6/metrics"
 )
 
 var (
@@ -35,12 +35,12 @@ func init() {
 var _ modules.Module = &LokiRoot{}
 
 type lokiMetrics struct {
-	ClientUncompressedBytes  *stats.Metric
-	ClientLines              *stats.Metric
-	BytesProcessedTotal      *stats.Metric
-	BytesProcessedPerSeconds *stats.Metric
-	LinesProcessedTotal      *stats.Metric
-	LinesProcessedPerSeconds *stats.Metric
+	ClientUncompressedBytes  *metrics.Metric
+	ClientLines              *metrics.Metric
+	BytesProcessedTotal      *metrics.Metric
+	BytesProcessedPerSeconds *metrics.Metric
+	LinesProcessedTotal      *metrics.Metric
+	LinesProcessedPerSeconds *metrics.Metric
 }
 
 // LokiRoot is the root module
@@ -60,32 +60,32 @@ func registerMetrics(vu modules.VU) (lokiMetrics, error) {
 	registry := vu.InitEnv().Registry
 	m := lokiMetrics{}
 
-	m.ClientUncompressedBytes, err = registry.NewMetric("loki_client_uncompressed_bytes", stats.Counter, stats.Data)
+	m.ClientUncompressedBytes, err = registry.NewMetric("loki_client_uncompressed_bytes", metrics.Counter, metrics.Data)
 	if err != nil {
 		return m, err
 	}
 
-	m.ClientLines, err = registry.NewMetric("loki_client_lines", stats.Counter, stats.Default)
+	m.ClientLines, err = registry.NewMetric("loki_client_lines", metrics.Counter, metrics.Default)
 	if err != nil {
 		return m, err
 	}
 
-	m.BytesProcessedTotal, err = registry.NewMetric("loki_bytes_processed_total", stats.Counter, stats.Data)
+	m.BytesProcessedTotal, err = registry.NewMetric("loki_bytes_processed_total", metrics.Counter, metrics.Data)
 	if err != nil {
 		return m, err
 	}
 
-	m.BytesProcessedPerSeconds, err = registry.NewMetric("loki_bytes_processed_per_second", stats.Trend, stats.Data)
+	m.BytesProcessedPerSeconds, err = registry.NewMetric("loki_bytes_processed_per_second", metrics.Trend, metrics.Data)
 	if err != nil {
 		return m, err
 	}
 
-	m.LinesProcessedTotal, err = registry.NewMetric("loki_lines_processed_total", stats.Counter, stats.Default)
+	m.LinesProcessedTotal, err = registry.NewMetric("loki_lines_processed_total", metrics.Counter, metrics.Default)
 	if err != nil {
 		return m, err
 	}
 
-	m.LinesProcessedPerSeconds, err = registry.NewMetric("loki_lines_processed_per_second", stats.Trend, stats.Default)
+	m.LinesProcessedPerSeconds, err = registry.NewMetric("loki_lines_processed_per_second", metrics.Trend, metrics.Default)
 	if err != nil {
 		return m, err
 	}
