@@ -153,7 +153,7 @@ Execute a series query ([GET /loki/api/v1/series](https://grafana.com/docs/loki/
 | name | values | notes |
 | ---- | ------ | ----- |
 | instance | fixed: 1 per k6 worker | |
-| format | fixed: apache_common, apache_combined, apache_error, rfc3164, rfc5424, json | This label defines how the log lines of a stream are formatted. |
+| format | fixed: apache_common, apache_combined, apache_error, rfc3164, rfc5424, json, logfmt | This label defines how the log lines of a stream are formatted. |
 | os | fixed: darwin, linux, windows | - |
 | namespace | variable | [^1] |
 | app | variable | [^1] |

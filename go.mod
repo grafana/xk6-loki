@@ -16,6 +16,6 @@ require (
 	go.k6.io/k6 v0.38.0
 )
 
-replace github.com/mingrammer/flog => github.com/chaudum/flog v0.4.4-0.20211115125504-92153be038e6
+replace github.com/mingrammer/flog => github.com/chaudum/flog v0.4.4-0.20220419113107-eb2f67f18b99
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.40.0
