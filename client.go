@@ -277,7 +277,7 @@ func IsSuccessfulResponse(n int) bool {
 	return n/100 == 2
 }
 
-type responseWithmetrics struct {
+type responseWithStats struct {
 	Data struct {
 		stats stats.Result
 	}
@@ -288,7 +288,7 @@ func (c *Client) reportMetricsFromStats(response httpext.Response, queryType Que
 	if !ok {
 		return errors.New("response body is not a string")
 	}
-	responseWithStats := responseWithmetrics{}
+	responseWithStats := responseWithStats{}
 	err := json.Unmarshal([]byte(responseBody), &responseWithStats)
 	if err != nil {
 		return errors.Wrap(err, "error unmarshalling response body to response with stats")
