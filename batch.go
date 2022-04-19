@@ -210,7 +210,7 @@ func generateValues(ff FakeFunc, n int) []string {
 // newLabelPool creates a "pool" of values for each label name
 func newLabelPool(faker *fake.Faker, cardinalities map[string]int) LabelPool {
 	lb := LabelPool{
-		"format": []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json"}, // needs to match the available flog formats
+		"format": []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json", "logfmt"}, // needs to match the available flog formats
 		"os":     []string{"darwin", "linux", "windows"},
 	}
 	if n, ok := cardinalities["namespace"]; ok {
