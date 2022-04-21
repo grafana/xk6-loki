@@ -1,7 +1,6 @@
 package loki
 
 import (
-	"context"
 	"fmt"
 	"math/rand"
 	"os"
@@ -16,7 +15,6 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/mingrammer/flog/flog"
 	"github.com/prometheus/common/model"
-	"go.k6.io/k6/lib"
 	"go.k6.io/k6/stats"
 )
 
@@ -129,13 +127,13 @@ func (b *Batch) createPushRequest() (*logproto.PushRequest, int) {
 }
 
 // newBatch creates a batch with randomly generated log streams
-func newBatch(
-	ctx context.Context, state *lib.State, pool LabelPool, numStreams, minBatchSize, maxBatchSize int,
-) *Batch {
+func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize int) *Batch {
 	batch := &Batch{
 		Streams:   make(map[string]*logproto.Stream, numStreams),
 		CreatedAt: time.Now(),
 	}
+	state := c.vu.State()
+
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "localhost"
@@ -165,16 +163,17 @@ func newBatch(
 	}
 
 	now := time.Now() // TODO move this in the send
+	ctx := c.vu.Context()
 	stats.PushIfNotDone(ctx, state.Samples, stats.ConnectedSamples{
 		Samples: []stats.Sample{
 			{
-				Metric: ClientUncompressedBytes,
+				Metric: c.metrics.ClientUncompressedBytes,
 				Tags:   &stats.SampleTags{},
 				Value:  float64(batch.Bytes),
 				Time:   now,
 			},
 			{
-				Metric: ClientLines,
+				Metric: c.metrics.ClientLines,
 				Tags:   &stats.SampleTags{},
 				Value:  float64(lines),
 				Time:   now,

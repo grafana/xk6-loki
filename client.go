@@ -12,6 +12,7 @@ import (
 
 	"github.com/grafana/loki/pkg/logql/stats"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/lib/netext/httpext"
@@ -27,17 +28,12 @@ const (
 	TenantPrefix = "xk6-tenant"
 )
 
-var (
-	BytesProcessedTotal      = k6_stats.New("loki_bytes_processed_total", k6_stats.Counter, k6_stats.Data)
-	BytesProcessedPerSeconds = k6_stats.New("loki_bytes_processed_per_second", k6_stats.Trend, k6_stats.Data)
-	LinesProcessedTotal      = k6_stats.New("loki_lines_processed_total", k6_stats.Counter, k6_stats.Default)
-	LinesProcessedPerSeconds = k6_stats.New("loki_lines_processed_per_second", k6_stats.Trend, k6_stats.Default)
-)
-
 type Client struct {
-	client *http.Client
-	cfg    *Config
-	vu     modules.VU
+	vu      modules.VU
+	client  *http.Client
+	logger  logrus.FieldLogger
+	cfg     *Config
+	metrics lokiMetrics
 }
 
 type Config struct {
@@ -203,7 +199,7 @@ func (c *Client) PushParameterized(streams, minBatchSize, maxBatchSize int) (htt
 		return *httpext.NewResponse(), errors.New("state is nil")
 	}
 
-	batch := newBatch(c.vu.Context(), c.vu.State(), c.cfg.Labels, streams, minBatchSize, maxBatchSize)
+	batch := c.newBatch(c.cfg.Labels, streams, minBatchSize, maxBatchSize)
 	return c.pushBatch(batch)
 }
 
@@ -283,7 +279,7 @@ func IsSuccessfulResponse(n int) bool {
 
 type responseWithStats struct {
 	Data struct {
-		Stats stats.Result
+		stats stats.Result
 	}
 }
 
@@ -302,27 +298,27 @@ func (c *Client) reportMetricsFromStats(response httpext.Response, queryType Que
 	k6_stats.PushIfNotDone(c.vu.Context(), c.vu.State().Samples, k6_stats.ConnectedSamples{
 		Samples: []k6_stats.Sample{
 			{
-				Metric: BytesProcessedTotal,
+				Metric: c.metrics.BytesProcessedTotal,
 				Tags:   tags,
-				Value:  float64(responseWithStats.Data.Stats.Summary.TotalBytesProcessed),
+				Value:  float64(responseWithStats.Data.stats.Summary.TotalBytesProcessed),
 				Time:   now,
 			},
 			{
-				Metric: BytesProcessedPerSeconds,
+				Metric: c.metrics.BytesProcessedPerSeconds,
 				Tags:   tags,
-				Value:  float64(responseWithStats.Data.Stats.Summary.BytesProcessedPerSecond),
+				Value:  float64(responseWithStats.Data.stats.Summary.BytesProcessedPerSecond),
 				Time:   now,
 			},
 			{
-				Metric: LinesProcessedTotal,
+				Metric: c.metrics.LinesProcessedTotal,
 				Tags:   tags,
-				Value:  float64(responseWithStats.Data.Stats.Summary.TotalLinesProcessed),
+				Value:  float64(responseWithStats.Data.stats.Summary.TotalLinesProcessed),
 				Time:   now,
 			},
 			{
-				Metric: LinesProcessedPerSeconds,
+				Metric: c.metrics.LinesProcessedPerSeconds,
 				Tags:   tags,
-				Value:  float64(responseWithStats.Data.Stats.Summary.LinesProcessedPerSecond),
+				Value:  float64(responseWithStats.Data.stats.Summary.LinesProcessedPerSecond),
 				Time:   now,
 			},
 		},

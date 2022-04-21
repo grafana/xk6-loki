@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	gofakeit "github.com/brianvoe/gofakeit/v6"
+	"go.k6.io/k6/js/modulestest"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/stats"
 )
@@ -17,6 +18,10 @@ func BenchmarkNewBatch(b *testing.B) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 
+	vu := &modulestest.VU{
+		CtxField:   ctx,
+		StateField: state,
+	}
 	defer cancel()
 	defer close(samples)
 	go func() { // this is so that we read the send samples
@@ -32,10 +37,13 @@ func BenchmarkNewBatch(b *testing.B) {
 	streams, minBatchSize, maxBatchSize := 5, 500, 1000
 	labels := newLabelPool(faker, cardinalities)
 
+	c := Client{
+		vu: vu,
+	}
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		_ = newBatch(ctx, state, labels, streams, minBatchSize, maxBatchSize)
+		_ = c.newBatch(labels, streams, minBatchSize, maxBatchSize)
 	}
 }
 
@@ -47,6 +55,11 @@ func BenchmarkEncode(b *testing.B) {
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 
+	vu := &modulestest.VU{
+		CtxField:   ctx,
+		StateField: state,
+	}
+
 	defer cancel()
 	defer close(samples)
 	go func() { // this is so that we read the send samples
@@ -62,8 +75,11 @@ func BenchmarkEncode(b *testing.B) {
 	streams, minBatchSize, maxBatchSize := 5, 500, 1000
 	labels := newLabelPool(faker, cardinalities)
 
+	c := Client{
+		vu: vu,
+	}
 	b.ReportAllocs()
-	batch := newBatch(ctx, state, labels, streams, minBatchSize, maxBatchSize)
+	batch := c.newBatch(labels, streams, minBatchSize, maxBatchSize)
 
 	b.Run("encode protobuf", func(b *testing.B) {
 		b.ResetTimer()
