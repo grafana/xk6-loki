@@ -16,7 +16,7 @@ import (
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/lib/netext/httpext"
-	k6_stats "go.k6.io/k6/stats"
+	"go.k6.io/k6/metrics"
 )
 
 const (
@@ -294,9 +294,10 @@ func (c *Client) reportMetricsFromStats(response httpext.Response, queryType Que
 		return errors.Wrap(err, "error unmarshalling response body to response with stats")
 	}
 	now := time.Now()
-	tags := k6_stats.NewSampleTags(map[string]string{"endpoint": queryType.Endpoint()})
-	k6_stats.PushIfNotDone(c.vu.Context(), c.vu.State().Samples, k6_stats.ConnectedSamples{
-		Samples: []k6_stats.Sample{
+	tags := metrics.NewSampleTags(map[string]string{"endpoint": queryType.Endpoint()})
+	ctx := c.vu.Context()
+	metrics.PushIfNotDone(ctx, c.vu.State().Samples, metrics.ConnectedSamples{
+		Samples: []metrics.Sample{
 			{
 				Metric: c.metrics.BytesProcessedTotal,
 				Tags:   tags,
