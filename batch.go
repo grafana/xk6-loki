@@ -15,7 +15,13 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/mingrammer/flog/flog"
 	"github.com/prometheus/common/model"
+	"github.com/sirupsen/logrus"
 	"go.k6.io/k6/metrics"
+)
+
+var (
+	LabelValuesFormat = []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json", "logfmt"}
+	LabelValuesOS     = []string{"darwin", "linux", "windows"}
 )
 
 type FakeFunc func() string
@@ -41,6 +47,15 @@ type JSONStream struct {
 
 type JSONPushRequest struct {
 	Streams []JSONStream `json:"streams"`
+}
+
+func isValidLogFormat(format string) bool {
+	for _, f := range LabelValuesFormat {
+		if f == format {
+			return true
+		}
+	}
+	return false
 }
 
 // encodeSnappy encodes the batch as snappy-compressed push request, and
@@ -144,12 +159,17 @@ func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize
 
 	for i := 0; i < numStreams; i++ {
 		labels := labelsFromPool(pool)
-		labels[model.InstanceLabel] = model.LabelValue(fmt.Sprintf("vu%d.%s", state.VUID, hostname))
+		if _, ok := labels[model.InstanceLabel]; !ok {
+			labels[model.InstanceLabel] = model.LabelValue(fmt.Sprintf("vu%d.%s", state.VUID, hostname))
+		}
 		stream := &logproto.Stream{Labels: labels.String()}
 		batch.Streams[stream.Labels] = stream
 
 		var now time.Time
 		logFmt := string(labels[model.LabelName("format")])
+		if !isValidLogFormat(logFmt) {
+			panic(fmt.Sprintf("%s is not a valid log format", logFmt))
+		}
 		var line string
 		for ; batch.Bytes < maxSizePerStream; batch.Bytes += len(line) {
 			now = time.Now()
@@ -207,26 +227,51 @@ func generateValues(ff FakeFunc, n int) []string {
 	return res
 }
 
+func defaultOrCustom(pool LabelPool, m map[string]interface{}, key string, generatorFn func(int) []string) LabelPool {
+	if val, ok := m[key]; ok {
+		switch v := val.(type) {
+		case int64:
+			pool[model.LabelName(key)] = generatorFn(int(v))
+		case string:
+			pool[model.LabelName(key)] = []string{v}
+		case []interface{}:
+			res := make([]string, 0, len(v))
+			for i := range v {
+				switch w := v[i].(type) {
+				case string:
+					res = append(res, string(w))
+				default:
+					panic(fmt.Sprintf("invalid value type: %T\n", v))
+				}
+			}
+			pool[model.LabelName(key)] = res
+		default:
+			panic(fmt.Sprintf("invalid value type: %T\n", v))
+		}
+	}
+	return pool
+}
+
 // newLabelPool creates a "pool" of values for each label name
-func newLabelPool(faker *fake.Faker, cardinalities map[string]int) LabelPool {
-	lb := LabelPool{
-		"format": []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json", "logfmt"}, // needs to match the available flog formats
-		"os":     []string{"darwin", "linux", "windows"},
+func newLabelPool(faker *fake.Faker, in map[string]interface{}, logger logrus.FieldLogger) LabelPool {
+	pool := LabelPool{
+		"format": LabelValuesFormat,
+		"os":     LabelValuesOS,
 	}
-	if n, ok := cardinalities["namespace"]; ok {
-		lb["namespace"] = generateValues(faker.BS, n)
-	}
-	if n, ok := cardinalities["app"]; ok {
-		lb["app"] = generateValues(faker.AppName, n)
-	}
-	if n, ok := cardinalities["pod"]; ok {
-		lb["pod"] = generateValues(faker.BS, n)
-	}
-	if n, ok := cardinalities["language"]; ok {
-		lb["language"] = generateValues(faker.LanguageAbbreviation, n)
-	}
-	if n, ok := cardinalities["word"]; ok {
-		lb["word"] = generateValues(faker.Noun, n)
-	}
-	return lb
+	// format and os must always be present
+	pool = defaultOrCustom(pool, in, "format", func(n int) []string { return LabelValuesFormat[:n] })
+	pool = defaultOrCustom(pool, in, "os", func(n int) []string { return LabelValuesOS[:n] })
+	// namespace, app, pod, language, and word are "builtin" labels
+	// they are kept for backwards comptibility
+	pool = defaultOrCustom(pool, in, "namespace", func(n int) []string { return generateValues(faker.BS, n) })
+	pool = defaultOrCustom(pool, in, "app", func(n int) []string { return generateValues(faker.AppName, n) })
+	pool = defaultOrCustom(pool, in, "pod", func(n int) []string { return generateValues(faker.BS, n) })
+	pool = defaultOrCustom(pool, in, "language", func(n int) []string { return generateValues(faker.LanguageAbbreviation, n) })
+	pool = defaultOrCustom(pool, in, "word", func(n int) []string {
+		logger.Warn(`label "word" is deprecated`)
+		return generateValues(faker.Noun, n)
+	})
+	// instance label can be overwritten
+	pool = defaultOrCustom(pool, in, "instance", func(n int) []string { panic("instance label must not be defined with int value") })
+	return pool
 }

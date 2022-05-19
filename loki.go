@@ -122,7 +122,7 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 	urlString := c.Argument(0).String()
 	timeoutMs := int(c.Argument(1).ToInteger())
 	protobufRatio := c.Argument(2).ToFloat()
-	var cardinalities map[string]int
+	var cardinalities map[string]interface{}
 	rt := r.vu.Runtime()
 	err := rt.ExportTo(c.Argument(3), &cardinalities)
 	if err != nil {
@@ -136,7 +136,7 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 		protobufRatio = DefaultProtobufRatio
 	}
 	if len(cardinalities) == 0 {
-		cardinalities = map[string]int{
+		cardinalities = map[string]interface{}{
 			"app":       5,
 			"namespace": 10,
 			"pod":       50,
@@ -168,7 +168,7 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 		UserAgent:     DefaultUserAgent,
 		TenantID:      u.User.Username(),
 		Timeout:       time.Duration(timeoutMs) * time.Millisecond,
-		Labels:        newLabelPool(faker, cardinalities),
+		Labels:        newLabelPool(faker, cardinalities, initEnv.Logger),
 		ProtobufRatio: protobufRatio,
 	}
 
