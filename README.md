@@ -37,17 +37,18 @@ import loki from 'k6/x/loki';
 
 on top of your test file.
 
-### Class `Config(url, [timeout, ratio, cardinality])`
+### Class `Config(url, [timeout, ratio, cardinality, labels])`
 
 The class `Config` holds configuration for the Loki client. The constructor
 takes the following arguments:
 
-| argument | type | description | default |
-| -------- | ---- | ----------- | ------- |
-| url  | string | The full URL to Loki in format `[${scheme}://][${tenant}[:${token}]]@${host}[:${port}]` | - |
-| timeout | integer | Request timeout in milliseconds, e.g. `10000` for 10s | 10000 |
-| ratio | float | The ratio between JSON and Protobuf encoded batch requests for pushing logs<br>Must be a number between (including) 0 (100% JSON) and 1 (100% Protobuf)<br>This is only relevant for write scenarios.| 0.9 |
-| cardinality | object | The cardinality (unique values) for [labels](#labels), where the object key is the name of the label and the value is the maximum amount of different values it may have. | null |
+| argument    | type    | description | default |
+| ----------- | ------- | ----------- | ------- |
+| url         | string  | The full URL to Loki in format `[${scheme}://][${tenant}[:${token}]]@${host}[:${port}]` | - |
+| timeout     | integer | Request timeout in milliseconds, e.g. `10000` for 10s | 10000 |
+| ratio       | float   | The ratio between JSON and Protobuf encoded batch requests for pushing logs<br>Must be a number between (including) 0 (100% JSON) and 1 (100% Protobuf)<br>This is only relevant for write scenarios.| 0.9 |
+| cardinality | object  | The cardinality (unique values) for [labels](#labels), where the object key is the name of the label and the value is the maximum amount of different values it may have. | null |
+| labels      | Labels  | A Labels object that contains custom label definitions. | null |
 
 **Example:**
 
@@ -56,14 +57,36 @@ import loki from 'k6/x/loki';
 let conf = loki.Config("localhost:3100");
 ```
 
+### Class `Labels(labels)`
+
+The class `Labels` allows the definition of custom labels that can be used
+instead of the built-in labels. An instance of this class can be passed as
+fifth argument to the `loki.Config` constructor.
+
+| argument | type   | description | default |
+| -------- | ------ | ----------- | ------- |
+| labels   | object | An object of type string (label name) to list of strings (possibel label values). | - |
+
+**Example:**
+
+```js
+import loki from 'k6/x/loki';
+let labels = loki.Labels({
+  "format": ["json", "logfmt"], // must contain at least one of the supported log formats
+  "cluster": ["prod-us-east-0", "prod-eu-west-1"],
+  "namespace": ["dev", "staging", "prod"],
+  "container": ["nginx", "app-1", "app-2", "app-3"]
+});
+```
+
 ### Class `Client(config)`
 
 The class `Client` is a Loki client that can read from and write to a Loki instance.
 The constructor takes the following arguments:
 
-| argument | type | description | default |
-| -------- | ---- | ----------- | ------- |
-| config | object |  An instance of `Config` which holds the configuration for the client. | - |
+| argument | type   | description | default |
+| -------- | ------ | ----------- | ------- |
+| config   | object |  An instance of `Config` which holds the configuration for the client. | - |
 
 **Example:**
 
@@ -173,7 +196,7 @@ Execute a series query ([GET /loki/api/v1/series](https://grafana.com/docs/loki/
 
 ## Labels
 
-`xk6-loki` uses the following label names for generating streams:
+`xk6-loki` uses the following built-in label names for generating streams:
 
 | name | values | notes |
 | ---- | ------ | ----- |
@@ -189,6 +212,13 @@ Execute a series query ([GET /loki/api/v1/series](https://grafana.com/docs/loki/
 [^1]: The amount of values can be defined in `cardinality` argument of the client configuration.
 
 The total amount of different streams is defined by the carthesian product of all label values. Keep in mind that high cardinality impacts the performance of the Loki instance.
+
+### Custom labels
+
+Additionally, `xk6-loki` also supports custom labels that can be used instead
+of the built-in labels.
+
+See [examples/custom-labels.js](examples/custom-labels.js) for a full example with custom labels.
 
 ## Metrics
 
