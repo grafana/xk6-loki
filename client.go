@@ -46,12 +46,21 @@ type Config struct {
 }
 
 func (c *Client) InstantQuery(logQuery string, limit int) (httpext.Response, error) {
+	return c.instantQuery(logQuery, limit, time.Now())
+}
+
+func (c *Client) InstantQueryAt(logQuery string, limit int, instant int64) (httpext.Response, error) {
+	return c.instantQuery(logQuery, limit, time.Unix(instant, 0))
+}
+
+func (c *Client) instantQuery(logQuery string, limit int, now time.Time) (httpext.Response, error) {
 	q := &Query{
 		Type:        InstantQuery,
 		QueryString: logQuery,
 		Limit:       limit,
 	}
-	q.SetInstant(time.Now())
+
+	q.SetInstant(now)
 	response, err := c.sendQuery(q)
 	if err == nil && IsSuccessfulResponse(response.Status) {
 		err = c.reportMetricsFromStats(response, InstantQuery)
@@ -60,7 +69,14 @@ func (c *Client) InstantQuery(logQuery string, limit int) (httpext.Response, err
 }
 
 func (c *Client) RangeQuery(logQuery string, duration string, limit int) (httpext.Response, error) {
-	now := time.Now()
+	return c.rangeQuery(logQuery, duration, limit, time.Now())
+}
+
+func (c *Client) RangeQueryAt(logQuery string, duration string, limit int, instant int64) (httpext.Response, error) {
+	return c.rangeQuery(logQuery, duration, limit, time.Unix(instant, 0))
+}
+
+func (c *Client) rangeQuery(logQuery string, duration string, limit int, now time.Time) (httpext.Response, error) {
 	dur, err := time.ParseDuration(duration)
 	if err != nil {
 		return httpext.Response{}, err
@@ -80,7 +96,14 @@ func (c *Client) RangeQuery(logQuery string, duration string, limit int) (httpex
 }
 
 func (c *Client) LabelsQuery(duration string) (httpext.Response, error) {
-	now := time.Now()
+	return c.labelsQuery(duration, time.Now())
+}
+
+func (c *Client) LabelsQueryAt(duration string, instant int64) (httpext.Response, error) {
+	return c.labelsQuery(duration, time.Unix(instant, 0))
+}
+
+func (c *Client) labelsQuery(duration string, now time.Time) (httpext.Response, error) {
 	dur, err := time.ParseDuration(duration)
 	if err != nil {
 		return httpext.Response{}, err
@@ -94,7 +117,14 @@ func (c *Client) LabelsQuery(duration string) (httpext.Response, error) {
 }
 
 func (c *Client) LabelValuesQuery(label string, duration string) (httpext.Response, error) {
-	now := time.Now()
+	return c.labelValuesQuery(label, duration, time.Now())
+}
+
+func (c *Client) LabelValuesQueryAt(label string, duration string, instant int64) (httpext.Response, error) {
+	return c.labelValuesQuery(label, duration, time.Unix(instant, 0))
+}
+
+func (c *Client) labelValuesQuery(label string, duration string, now time.Time) (httpext.Response, error) {
 	dur, err := time.ParseDuration(duration)
 	if err != nil {
 		return httpext.Response{}, err
@@ -109,7 +139,14 @@ func (c *Client) LabelValuesQuery(label string, duration string) (httpext.Respon
 }
 
 func (c *Client) SeriesQuery(matchers string, duration string) (httpext.Response, error) {
-	now := time.Now()
+	return c.seriesQuery(matchers, duration, time.Now())
+}
+
+func (c *Client) SeriesQueryAt(matchers string, duration string, instant int64) (httpext.Response, error) {
+	return c.seriesQuery(matchers, duration, time.Unix(instant, 0))
+}
+
+func (c *Client) seriesQuery(matchers string, duration string, now time.Time) (httpext.Response, error) {
 	dur, err := time.ParseDuration(duration)
 	if err != nil {
 		return httpext.Response{}, err

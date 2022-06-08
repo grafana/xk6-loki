@@ -50,6 +50,7 @@ func (q *Query) Endpoint() string {
 
 func (q *Query) Values() url.Values {
 	v := url.Values{}
+
 	if q.QueryString != "" {
 		if q.Type == RangeQuery || q.Type == InstantQuery {
 			v.Set("query", q.QueryString)
@@ -58,12 +59,12 @@ func (q *Query) Values() url.Values {
 			v.Set("match[]", q.QueryString)
 		}
 	}
+
 	if q.Type == InstantQuery {
 		if q.End.Unix() > 0 {
 			v.Set("time", strconv.FormatInt(q.End.UnixNano(), 10))
 		}
-	}
-	if q.Type == RangeQuery {
+	} else {
 		if q.Start.Unix() > 0 {
 			v.Set("start", strconv.FormatInt(q.Start.UnixNano(), 10))
 		}
@@ -71,6 +72,7 @@ func (q *Query) Values() url.Values {
 			v.Set("end", strconv.FormatInt(q.End.UnixNano(), 10))
 		}
 	}
+
 	if q.Limit > 0 {
 		v.Set("limit", strconv.Itoa(q.Limit))
 	}

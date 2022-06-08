@@ -95,54 +95,79 @@ A stream is a set of log lines with a unique set of labels.
 
 #### Method `client.instantQuery(query, limit)`
 
+This function is a shortcut for `client.instantQueryAt(query, limit, time.Now())` where `time.Now()` is the current nanosecond.
+
+#### Method `client.instantQueryAt(query, limit, instant)`
+
 Execute an instant query ([GET /loki/api/v1/query](https://grafana.com/docs/loki/latest/api/#get-lokiapiv1query)).
 
-| argument | type | description | default |
-| -------- | ---- | ----------- | ------- |
-| query | string | The LogQL query to perform. | - |
-| limit | integer | Maxiumum number of entries to return. | - |
+| argument | type    | description                           | default |
+|----------|---------|---------------------------------------|---------|
+| query    | string  | The LogQL query to perform.           | -       |
+| limit    | integer | Maxiumum number of entries to return. | -       |
+| instant  | integer | Nanosecond at which to execute query. | -       |
 
 #### Method `client.rangeQuery(query, duration, limit)`
 
+This function is a shortcut for `client.rangeQueryAt(query, duration, limit, time.Now())` where `time.Now()` is the current nanosecond.
+
+#### Method `client.rangeQueryAt(query, duration, limit, instant)`
+
 Execute a range query ([GET /loki/api/v1/query_range](https://grafana.com/docs/loki/latest/api/#get-lokiapiv1query_range)).
 
-| argument | type | description | default |
-| -------- | ---- | ----------- | ------- |
-| query | string | The LogQL query to perform. | - |
-| duration | string | The time span of the range, e.g. `15m`, `1h`, or `7d`. | - |
-| limit | integer | Maxiumum number of entries to return. | - |
+| argument | type    | description                                            | default |
+|----------|---------|--------------------------------------------------------|---------|
+| query    | string  | The LogQL query to perform.                            | -       |
+| duration | string  | The time span of the range, e.g. `15m`, `1h`, or `7d`. | -       |
+| limit    | integer | Maxiumum number of entries to return.                  | -       |
+| instant  | integer | Nanosecond at which to execute query.                  | -       |
 
 `duration` defines the range for the query and uses the current timestamp as end and current timestamp - duration as start.
 
 #### Method `client.labelsQuery(duration)`
 
+This function is a shortcut for `client.labelsQueryAt(duration, time.Now())` where `time.Now()` is the current nanosecond.
+
+#### Method `client.labelsQueryAt(duration, instant)`
+
 Execute a labels query ([GET /loki/api/v1/labels](https://grafana.com/docs/loki/latest/api/#get-lokiapiv1labels)).
 
-| argument | type | description | default |
-| -------- | ---- | ----------- | ------- |
-| duration | string | The time span for which labels should be returned, e.g. `15m`, `1h`, or `7d`. | - |
+| argument | type    | description                                                                   | default |
+|----------|---------|-------------------------------------------------------------------------------|---------|
+| duration | string  | The time span for which labels should be returned, e.g. `15m`, `1h`, or `7d`. | -       |
+| instant  | integer | Nanosecond at which to execute query.                                         | -       |
 
 `duration` defines the range for the query and uses the current timestamp as end and current timestamp - duration as start.
 
 #### Method `client.labelValuesQuery(label, duration)`
 
+This function is a shortcut for `client.labelValuesQueryAt(label, duration, time.Now())` where `time.Now()` is the current nanosecond.
+
+#### Method `client.labelValuesQueryAt(label, duration, instant)`
+
 Execute a label values query ([GET /loki/api/v1/label/<name>/values](https://grafana.com/docs/loki/latest/api/#get-lokiapiv1labelnamevalues)).
 
-| argument | type | description | default |
-| -------- | ---- | ----------- | ------- |
-| label | string | The label name for which to query the values. | - |
-| duration | string | The time span for which label values should be returned, e.g. `15m`, `1h`, or `7d`. | - |
+| argument | type    | description                                                                         | default |
+|----------|---------|-------------------------------------------------------------------------------------|---------|
+| label    | string  | The label name for which to query the values.                                       | -       |
+| duration | string  | The time span for which label values should be returned, e.g. `15m`, `1h`, or `7d`. | -       |
+| instant  | integer | Nanosecond at which to execute query.                                               | -       |
 
 `duration` defines the range for the query and uses the current timestamp as end and current timestamp - duration as start.
 
 #### Method `client.seriesQuery(matchers, duration)`
 
+This function is a shortcut for `client.seriesQueryAt(matchers, duration, time.Now())` where `time.Now()` is the current nanosecond.
+
+#### Method `client.seriesQueryAt(matchers, duration, instant)`
+
 Execute a series query ([GET /loki/api/v1/series](https://grafana.com/docs/loki/latest/api/#series)).
 
-| argument | type | description | default |
-| -------- | ---- | ----------- | ------- |
-| matchers | list | A list of label matchers used for the query. | - |
-| duration | string | The time span for which the matching series should be returned, e.g. `15m`, `1h`, or `7d`. | - |
+| argument | type    | description                                                                                | default |
+|----------|---------|--------------------------------------------------------------------------------------------|---------|
+| matchers | list    | A list of label matchers used for the query.                                               | -       |
+| duration | string  | The time span for which the matching series should be returned, e.g. `15m`, `1h`, or `7d`. | -       |
+| instant  | integer | Nanosecond at which to execute query.                                                      | -       |
 
 `duration` defines the range for the query and uses the current timestamp as end and current timestamp - duration as start.
 
