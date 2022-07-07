@@ -78,20 +78,21 @@ func BenchmarkEncode(b *testing.B) {
 	c := Client{
 		vu: vu,
 	}
-	b.ReportAllocs()
 	batch := c.newBatch(labels, streams, minBatchSize, maxBatchSize)
 
 	b.Run("encode protobuf", func(b *testing.B) {
+		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			_, _ = batch.createPushRequest()
+			_, _, _ = batch.encodeSnappy()
 		}
 	})
 
 	b.Run("encode json", func(b *testing.B) {
+		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			_, _ = batch.createJSONPushRequest()
+			_, _, _ = batch.encodeJSON()
 		}
 	})
 }
