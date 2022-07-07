@@ -18,6 +18,10 @@ import (
 	"go.k6.io/k6/metrics"
 )
 
+var (
+	LabelValuesFormat = []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json", "logfmt"}
+)
+
 type FakeFunc func() string
 
 type LabelPool map[model.LabelName][]string
@@ -41,6 +45,15 @@ type JSONStream struct {
 
 type JSONPushRequest struct {
 	Streams []JSONStream `json:"streams"`
+}
+
+func isValidLogFormat(format string) bool {
+	for _, f := range LabelValuesFormat {
+		if f == format {
+			return true
+		}
+	}
+	return false
 }
 
 // encodeSnappy encodes the batch as snappy-compressed push request, and
@@ -144,12 +157,17 @@ func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize
 
 	for i := 0; i < numStreams; i++ {
 		labels := labelsFromPool(pool)
-		labels[model.InstanceLabel] = model.LabelValue(fmt.Sprintf("vu%d.%s", state.VUID, hostname))
+		if _, ok := labels[model.InstanceLabel]; !ok {
+			labels[model.InstanceLabel] = model.LabelValue(fmt.Sprintf("vu%d.%s", state.VUID, hostname))
+		}
 		stream := &logproto.Stream{Labels: labels.String()}
 		batch.Streams[stream.Labels] = stream
 
 		var now time.Time
 		logFmt := string(labels[model.LabelName("format")])
+		if !isValidLogFormat(logFmt) {
+			panic(fmt.Sprintf("%s is not a valid log format", logFmt))
+		}
 		var line string
 		for ; batch.Bytes < maxSizePerStream; batch.Bytes += len(line) {
 			now = time.Now()

@@ -10,6 +10,7 @@ import (
 	gofakeit "github.com/brianvoe/gofakeit/v6"
 	"github.com/dop251/goja"
 	"github.com/pkg/errors"
+	"github.com/prometheus/common/model"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/metrics"
@@ -104,6 +105,7 @@ func (r *Loki) Exports() modules.Exports {
 		Named: map[string]interface{}{
 			"Config":    r.config,
 			"Client":    r.client,
+			"Labels":    r.createLabels,
 			"getLables": r.getLabels,
 		},
 	}
@@ -115,32 +117,31 @@ func (r *Loki) Exports() modules.Exports {
 // ```
 func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 	initEnv := r.vu.InitEnv()
+	rt := r.vu.Runtime()
 
 	if initEnv == nil {
-		common.Throw(r.vu.Runtime(), errors.New("Client constructor needs to be called in the init context"))
+		common.Throw(rt, errors.New("Client constructor needs to be called in the init context"))
 	}
 	urlString := c.Argument(0).String()
-	timeoutMs := int(c.Argument(1).ToInteger())
-	protobufRatio := c.Argument(2).ToFloat()
-	var cardinalities map[string]int
-	rt := r.vu.Runtime()
-	err := rt.ExportTo(c.Argument(3), &cardinalities)
-	if err != nil {
-		common.Throw(rt, fmt.Errorf("Config constructor expects map of string to integers as forth argument"))
-	}
 
+	timeoutMs := int(c.Argument(1).ToInteger())
 	if timeoutMs == 0 {
 		timeoutMs = DefaultPushTimeout
 	}
+
+	protobufRatio := c.Argument(2).ToFloat()
 	if protobufRatio == 0 {
 		protobufRatio = DefaultProtobufRatio
 	}
-	if len(cardinalities) == 0 {
-		cardinalities = map[string]int{
-			"app":       5,
-			"namespace": 10,
-			"pod":       50,
-		}
+
+	var cardinalities map[string]int
+	if err := rt.ExportTo(c.Argument(3), &cardinalities); err != nil {
+		common.Throw(rt, fmt.Errorf("Config constructor expects map of string to integers as forth argument"))
+	}
+
+	var labels LabelPool
+	if err := rt.ExportTo(c.Argument(4), &labels); err != nil {
+		common.Throw(rt, fmt.Errorf("Config constructor expects Labels as fifth argument"))
 	}
 
 	initEnv.Logger.Debug(fmt.Sprintf("url=%s timeoutMs=%d protobufRatio=%f cardinalities=%v", urlString, timeoutMs, protobufRatio, cardinalities))
@@ -152,15 +153,19 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 		panic(err)
 	}
 
-	if timeoutMs == 0 {
-		timeoutMs = DefaultPushTimeout
-	}
-	if protobufRatio == 0.0 {
-		protobufRatio = DefaultProtobufRatio
-	}
-
 	if u.User.Username() == "" {
 		initEnv.Logger.Warn("Running in multi-tenant-mode. Each VU has its own X-Scope-OrgID")
+	}
+
+	if len(labels) == 0 {
+		if len(cardinalities) == 0 {
+			cardinalities = map[string]int{
+				"app":       5,
+				"namespace": 10,
+				"pod":       50,
+			}
+		}
+		labels = newLabelPool(faker, cardinalities)
 	}
 
 	config := &Config{
@@ -168,7 +173,7 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 		UserAgent:     DefaultUserAgent,
 		TenantID:      u.User.Username(),
 		Timeout:       time.Duration(timeoutMs) * time.Millisecond,
-		Labels:        newLabelPool(faker, cardinalities),
+		Labels:        labels,
 		ProtobufRatio: protobufRatio,
 	}
 
@@ -191,6 +196,19 @@ func (r *Loki) client(c goja.ConstructorCall) *goja.Object {
 		vu:      r.vu,
 		metrics: r.metrics,
 	}).ToObject(rt)
+}
+
+func (r *Loki) createLabels(c goja.ConstructorCall) *goja.Object {
+	rt := r.vu.Runtime()
+	var labels map[string][]string
+	if err := rt.ExportTo(c.Argument(0), &labels); err != nil {
+		common.Throw(rt, fmt.Errorf("Labels constructor expects map of string to string array argument"))
+	}
+	pool := make(LabelPool, len(labels))
+	for k, v := range labels {
+		pool[model.LabelName(k)] = v
+	}
+	return rt.ToValue(&pool).ToObject(rt)
 }
 
 func (r *Loki) getLabels(config Config) interface{} {
