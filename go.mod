@@ -8,7 +8,7 @@ require (
 	github.com/gogo/protobuf v1.3.1
 	github.com/golang/snappy v0.0.3
 	github.com/grafana/loki v1.6.1
-	github.com/json-iterator/go v1.1.10
+	github.com/json-iterator/go v1.1.12
 	github.com/mingrammer/flog v0.4.3
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.10.0
