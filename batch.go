@@ -12,7 +12,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/grafana/loki/pkg/logproto"
-	json "github.com/json-iterator/go"
+	json "github.com/mailru/easyjson"
 	"github.com/mingrammer/flog/flog"
 	"github.com/prometheus/common/model"
 	"go.k6.io/k6/js/common"
@@ -39,11 +39,14 @@ type Entry struct {
 	Labels   model.LabelSet
 }
 
+//go:generate easyjson -pkg -no_std_marshalers -gen_build_flags -mod=mod .
+//easyjson:json
 type JSONStream struct {
 	Stream map[string]string `json:"stream"`
 	Values [][]string        `json:"values"`
 }
 
+//easyjson:json
 type JSONPushRequest struct {
 	Streams []JSONStream `json:"streams"`
 }
