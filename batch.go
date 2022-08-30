@@ -15,6 +15,7 @@ import (
 	json "github.com/json-iterator/go"
 	"github.com/mingrammer/flog/flog"
 	"github.com/prometheus/common/model"
+	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/metrics"
 )
 
@@ -166,7 +167,7 @@ func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize
 		var now time.Time
 		logFmt := string(labels[model.LabelName("format")])
 		if !isValidLogFormat(logFmt) {
-			panic(fmt.Sprintf("%s is not a valid log format", logFmt))
+			common.Throw(c.vu.Runtime(), fmt.Errorf("%s is not a valid log format", logFmt))
 		}
 		var line string
 		for ; batch.Bytes < maxSizePerStream; batch.Bytes += len(line) {
