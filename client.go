@@ -10,7 +10,7 @@ import (
 	"path"
 	"time"
 
-	"github.com/grafana/loki/pkg/logql/stats"
+	"github.com/grafana/loki/pkg/logqlmodel/stats"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.k6.io/k6/js/modules"
