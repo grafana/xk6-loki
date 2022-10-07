@@ -316,7 +316,7 @@ func IsSuccessfulResponse(n int) bool {
 
 type responseWithStats struct {
 	Data struct {
-		stats stats.Result
+		Stats stats.Result
 	}
 }
 
@@ -338,25 +338,25 @@ func (c *Client) reportMetricsFromStats(response httpext.Response, queryType Que
 			{
 				Metric: c.metrics.BytesProcessedTotal,
 				Tags:   tags,
-				Value:  float64(responseWithStats.Data.stats.Summary.TotalBytesProcessed),
+				Value:  float64(responseWithStats.Data.Stats.Summary.TotalBytesProcessed),
 				Time:   now,
 			},
 			{
 				Metric: c.metrics.BytesProcessedPerSeconds,
 				Tags:   tags,
-				Value:  float64(responseWithStats.Data.stats.Summary.BytesProcessedPerSecond),
+				Value:  float64(responseWithStats.Data.Stats.Summary.BytesProcessedPerSecond),
 				Time:   now,
 			},
 			{
 				Metric: c.metrics.LinesProcessedTotal,
 				Tags:   tags,
-				Value:  float64(responseWithStats.Data.stats.Summary.TotalLinesProcessed),
+				Value:  float64(responseWithStats.Data.Stats.Summary.TotalLinesProcessed),
 				Time:   now,
 			},
 			{
 				Metric: c.metrics.LinesProcessedPerSeconds,
 				Tags:   tags,
-				Value:  float64(responseWithStats.Data.stats.Summary.LinesProcessedPerSecond),
+				Value:  float64(responseWithStats.Data.Stats.Summary.LinesProcessedPerSecond),
 				Time:   now,
 			},
 		},
