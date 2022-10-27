@@ -4,7 +4,7 @@ go 1.16
 
 require (
 	github.com/brianvoe/gofakeit/v6 v6.9.0
-	github.com/dop251/goja v0.0.0-20220815083517-0c74f9139fd6
+	github.com/dop251/goja v0.0.0-20221003171542-5ea1285e6c91
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/grafana/loki v1.6.2-0.20221006221238-7979cfbe076d
@@ -12,8 +12,8 @@ require (
 	github.com/mingrammer/flog v0.4.3
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.37.0
-	github.com/sirupsen/logrus v1.8.1
-	go.k6.io/k6 v0.40.0
+	github.com/sirupsen/logrus v1.9.0
+	go.k6.io/k6 v0.40.1-0.20221020144551-8a74171c8b43
 )
 
 replace github.com/mingrammer/flog => github.com/chaudum/flog v0.4.4-0.20220419113107-eb2f67f18b99
