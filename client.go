@@ -331,33 +331,46 @@ func (c *Client) reportMetricsFromStats(response httpext.Response, queryType Que
 		return errors.Wrap(err, "error unmarshalling response body to response with stats")
 	}
 	now := time.Now()
-	tags := metrics.NewSampleTags(map[string]string{"endpoint": queryType.Endpoint()})
+	ctm := c.vu.State().Tags.GetCurrentValues()
+	tags := ctm.Tags.With("endpoint", queryType.Endpoint())
 	ctx := c.vu.Context()
 	metrics.PushIfNotDone(ctx, c.vu.State().Samples, metrics.ConnectedSamples{
 		Samples: []metrics.Sample{
 			{
-				Metric: c.metrics.BytesProcessedTotal,
-				Tags:   tags,
-				Value:  float64(responseWithStats.Data.Stats.Summary.TotalBytesProcessed),
-				Time:   now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: c.metrics.BytesProcessedTotal,
+					Tags:   tags,
+				},
+				Metadata: ctm.Metadata,
+				Value:    float64(responseWithStats.Data.Stats.Summary.TotalBytesProcessed),
+				Time:     now,
 			},
 			{
-				Metric: c.metrics.BytesProcessedPerSeconds,
-				Tags:   tags,
-				Value:  float64(responseWithStats.Data.Stats.Summary.BytesProcessedPerSecond),
-				Time:   now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: c.metrics.BytesProcessedPerSeconds,
+					Tags:   tags,
+				},
+				Metadata: ctm.Metadata,
+				Value:    float64(responseWithStats.Data.Stats.Summary.BytesProcessedPerSecond),
+				Time:     now,
 			},
 			{
-				Metric: c.metrics.LinesProcessedTotal,
-				Tags:   tags,
-				Value:  float64(responseWithStats.Data.Stats.Summary.TotalLinesProcessed),
-				Time:   now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: c.metrics.LinesProcessedTotal,
+					Tags:   tags,
+				},
+				Metadata: ctm.Metadata,
+				Value:    float64(responseWithStats.Data.Stats.Summary.TotalLinesProcessed),
+				Time:     now,
 			},
 			{
-				Metric: c.metrics.LinesProcessedPerSeconds,
-				Tags:   tags,
-				Value:  float64(responseWithStats.Data.Stats.Summary.LinesProcessedPerSecond),
-				Time:   now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: c.metrics.LinesProcessedPerSeconds,
+					Tags:   tags,
+				},
+				Metadata: ctm.Metadata,
+				Value:    float64(responseWithStats.Data.Stats.Summary.LinesProcessedPerSecond),
+				Time:     now,
 			},
 		},
 	})

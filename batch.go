@@ -19,9 +19,7 @@ import (
 	"go.k6.io/k6/metrics"
 )
 
-var (
-	LabelValuesFormat = []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json", "logfmt"}
-)
+var LabelValuesFormat = []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json", "logfmt"}
 
 type FakeFunc func() string
 
@@ -186,19 +184,26 @@ func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize
 
 	now := time.Now() // TODO move this in the send
 	ctx := c.vu.Context()
+	ctm := c.vu.State().Tags.GetCurrentValues()
 	metrics.PushIfNotDone(ctx, state.Samples, metrics.ConnectedSamples{
 		Samples: []metrics.Sample{
 			{
-				Metric: c.metrics.ClientUncompressedBytes,
-				Tags:   &metrics.SampleTags{},
-				Value:  float64(batch.Bytes),
-				Time:   now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: c.metrics.ClientUncompressedBytes,
+					Tags:   ctm.Tags,
+				},
+				Metadata: ctm.Metadata,
+				Value:    float64(batch.Bytes),
+				Time:     now,
 			},
 			{
-				Metric: c.metrics.ClientLines,
-				Tags:   &metrics.SampleTags{},
-				Value:  float64(lines),
-				Time:   now,
+				TimeSeries: metrics.TimeSeries{
+					Metric: c.metrics.ClientLines,
+					Tags:   ctm.Tags,
+				},
+				Metadata: ctm.Metadata,
+				Value:    float64(lines),
+				Time:     now,
 			},
 		},
 	})
