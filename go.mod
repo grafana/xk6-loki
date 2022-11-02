@@ -13,7 +13,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.37.0
 	github.com/sirupsen/logrus v1.9.0
-	go.k6.io/k6 v0.40.1-0.20221020144551-8a74171c8b43
+	go.k6.io/k6 v0.41.0
 )
 
 replace github.com/mingrammer/flog => github.com/chaudum/flog v0.4.4-0.20220419113107-eb2f67f18b99
