@@ -301,6 +301,7 @@ func (c *Client) send(state *lib.State, buf []byte, useProtobuf bool) (httpext.R
 		Redirects:        state.Options.MaxRedirects,
 		Timeout:          c.cfg.Timeout,
 		ResponseCallback: IsSuccessfulResponse,
+		TagsAndMeta:      state.Tags.GetCurrentValues(),
 	})
 	if err != nil {
 		return *httpResp, err
