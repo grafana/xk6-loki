@@ -206,6 +206,7 @@ func (c *Client) sendQuery(q *Query) (httpext.Response, error) {
 		Redirects:        state.Options.MaxRedirects,
 		Timeout:          c.cfg.Timeout,
 		ResponseCallback: IsSuccessfulResponse,
+		TagsAndMeta:      state.Tags.GetCurrentValues(),
 	})
 	if err != nil {
 		return *httpResp, err
