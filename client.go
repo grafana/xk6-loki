@@ -267,8 +267,11 @@ func (c *Client) pushBatch(batch *Batch) (httpext.Response, error) {
 		return *httpext.NewResponse(), errors.Wrap(err, "push request failed")
 	}
 	res.Request.Body = ""
+	if IsSuccessfulResponse(res.Status) {
+		c.reportMetricsFromBatch(batch)
+	}
 
-	return res, nil
+	return res, err
 }
 
 func (c *Client) send(state *lib.State, buf []byte, useProtobuf bool) (httpext.Response, error) {
@@ -377,4 +380,38 @@ func (c *Client) reportMetricsFromStats(response httpext.Response, queryType Que
 		},
 	})
 	return nil
+}
+
+func (c *Client) reportMetricsFromBatch(batch *Batch) {
+	lines := 0
+	for _, stream := range batch.Streams {
+		lines += len(stream.Entries)
+	}
+
+	now := time.Now()
+	ctx := c.vu.Context()
+	ctm := c.vu.State().Tags.GetCurrentValues()
+
+	metrics.PushIfNotDone(ctx, c.vu.State().Samples, metrics.ConnectedSamples{
+		Samples: []metrics.Sample{
+			{
+				TimeSeries: metrics.TimeSeries{
+					Metric: c.metrics.ClientUncompressedBytes,
+					Tags:   ctm.Tags,
+				},
+				Metadata: ctm.Metadata,
+				Value:    float64(batch.Bytes),
+				Time:     now,
+			},
+			{
+				TimeSeries: metrics.TimeSeries{
+					Metric: c.metrics.ClientLines,
+					Tags:   ctm.Tags,
+				},
+				Metadata: ctm.Metadata,
+				Value:    float64(lines),
+				Time:     now,
+			},
+		},
+	})
 }
