@@ -16,7 +16,6 @@ import (
 	"github.com/mingrammer/flog/flog"
 	"github.com/prometheus/common/model"
 	"go.k6.io/k6/js/common"
-	"go.k6.io/k6/metrics"
 )
 
 var LabelValuesFormat = []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json", "logfmt"}
@@ -155,7 +154,6 @@ func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize
 	}
 
 	maxSizePerStream := (minBatchSize + rand.Intn(maxBatchSize-minBatchSize)) / numStreams
-	lines := 0
 
 	for i := 0; i < numStreams; i++ {
 		labels := labelsFromPool(pool)
@@ -179,34 +177,7 @@ func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize
 				Line:      line,
 			})
 		}
-		lines += len(stream.Entries)
 	}
-
-	now := time.Now() // TODO move this in the send
-	ctx := c.vu.Context()
-	ctm := c.vu.State().Tags.GetCurrentValues()
-	metrics.PushIfNotDone(ctx, state.Samples, metrics.ConnectedSamples{
-		Samples: []metrics.Sample{
-			{
-				TimeSeries: metrics.TimeSeries{
-					Metric: c.metrics.ClientUncompressedBytes,
-					Tags:   ctm.Tags,
-				},
-				Metadata: ctm.Metadata,
-				Value:    float64(batch.Bytes),
-				Time:     now,
-			},
-			{
-				TimeSeries: metrics.TimeSeries{
-					Metric: c.metrics.ClientLines,
-					Tags:   ctm.Tags,
-				},
-				Metadata: ctm.Metadata,
-				Value:    float64(lines),
-				Time:     now,
-			},
-		},
-	})
 
 	return batch
 }
