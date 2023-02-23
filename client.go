@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/grafana/loki/pkg/logqlmodel/stats"
@@ -40,7 +41,7 @@ type Config struct {
 	URL           url.URL
 	UserAgent     string
 	Timeout       time.Duration
-	TenantID      string
+	TenantIDs     []string
 	Labels        LabelPool
 	ProtobufRatio float64
 }
@@ -192,8 +193,8 @@ func (c *Client) sendQuery(q *Query) (httpext.Response, error) {
 
 	r.Header.Set("User-Agent", c.cfg.UserAgent)
 	r.Header.Set("Accept", ContentTypeJSON)
-	if c.cfg.TenantID != "" {
-		r.Header.Set("X-Scope-OrgID", c.cfg.TenantID)
+	if len(c.cfg.TenantIDs) > 0 {
+		r.Header.Set("X-Scope-OrgID", strings.Join(c.cfg.TenantIDs, "|"))
 	} else {
 		r.Header.Set("X-Scope-OrgID", fmt.Sprintf("%s-%d", TenantPrefix, state.VUID))
 	}
@@ -284,8 +285,8 @@ func (c *Client) send(state *lib.State, buf []byte, useProtobuf bool) (httpext.R
 
 	r.Header.Set("User-Agent", c.cfg.UserAgent)
 	r.Header.Set("Accept", ContentTypeJSON)
-	if c.cfg.TenantID != "" {
-		r.Header.Set("X-Scope-OrgID", c.cfg.TenantID)
+	if len(c.cfg.TenantIDs) == 0 {
+		r.Header.Set("X-Scope-OrgID", strings.Join(c.cfg.TenantIDs, "|"))
 	} else {
 		r.Header.Set("X-Scope-OrgID", fmt.Sprintf("%s-%d", TenantPrefix, state.VUID))
 	}

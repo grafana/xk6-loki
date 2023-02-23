@@ -144,9 +144,12 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 		common.Throw(rt, fmt.Errorf("Config constructor expects Labels as fifth argument"))
 	}
 
-	tenantId := c.Argument(5).String()
+	var tenantIds []string
+	if err := rt.ExportTo(c.Argument(5), &tenantIds); err != nil {
+		common.Throw(rt, fmt.Errorf("Config constructor expects an array of tenant IDs as the sixth argument"))
+	}
 
-	initEnv.Logger.Debug(fmt.Sprintf("url=%s timeoutMs=%d protobufRatio=%f cardinalities=%v tenantId=%s", urlString, timeoutMs, protobufRatio, cardinalities, tenantId))
+	initEnv.Logger.Debug(fmt.Sprintf("url=%s timeoutMs=%d protobufRatio=%f cardinalities=%v tenantIds=%v", urlString, timeoutMs, protobufRatio, cardinalities, tenantIds))
 
 	faker := gofakeit.New(12345)
 
@@ -155,12 +158,12 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 		panic(err)
 	}
 
-	if tenantId == "" {
-		tenantId = u.User.Username()
-	}
-
-	if tenantId == "" {
-		initEnv.Logger.Warn("Running in multi-tenant-mode. Each VU has its own X-Scope-OrgID")
+	if len(tenantIds) == 0 {
+		if u.User.Username() != "" {
+			tenantIds = []string{u.User.Username()}
+		} else {
+			initEnv.Logger.Warn("Running in multi-tenant-mode. Each VU has its own X-Scope-OrgID")
+		}
 	}
 
 	if len(labels) == 0 {
@@ -177,7 +180,7 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 	config := &Config{
 		URL:           *u,
 		UserAgent:     DefaultUserAgent,
-		TenantID:      tenantId,
+		TenantIDs:     tenantIds,
 		Timeout:       time.Duration(timeoutMs) * time.Millisecond,
 		Labels:        labels,
 		ProtobufRatio: protobufRatio,
