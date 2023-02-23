@@ -144,7 +144,9 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 		common.Throw(rt, fmt.Errorf("Config constructor expects Labels as fifth argument"))
 	}
 
-	initEnv.Logger.Debug(fmt.Sprintf("url=%s timeoutMs=%d protobufRatio=%f cardinalities=%v", urlString, timeoutMs, protobufRatio, cardinalities))
+	tenantId := c.Argument(5).String()
+
+	initEnv.Logger.Debug(fmt.Sprintf("url=%s timeoutMs=%d protobufRatio=%f cardinalities=%v tenantId=%s", urlString, timeoutMs, protobufRatio, cardinalities, tenantId))
 
 	faker := gofakeit.New(12345)
 
@@ -153,7 +155,11 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 		panic(err)
 	}
 
-	if u.User.Username() == "" {
+	if tenantId == "" {
+		tenantId = u.User.Username()
+	}
+
+	if tenantId == "" {
 		initEnv.Logger.Warn("Running in multi-tenant-mode. Each VU has its own X-Scope-OrgID")
 	}
 
@@ -171,7 +177,7 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 	config := &Config{
 		URL:           *u,
 		UserAgent:     DefaultUserAgent,
-		TenantID:      u.User.Username(),
+		TenantID:      tenantId,
 		Timeout:       time.Duration(timeoutMs) * time.Millisecond,
 		Labels:        labels,
 		ProtobufRatio: protobufRatio,
