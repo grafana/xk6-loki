@@ -128,3 +128,7 @@ replace github.com/gocql/gocql => github.com/grafana/gocql v0.0.0-20200605141915
 exclude k8s.io/client-go v8.0.0+incompatible
 
 replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.42.0
+
+replace github.com/grafana/loki => github.com/grafana/loki-hackathon-2023-03-project-lili v0.0.0-20230315143709-401b0faefc0a
+
+replace github.com/grafana/loki/pkg/push => github.com/grafana/loki-hackathon-2023-03-project-lili/pkg/push v0.0.0-20230315143709-401b0faefc0a
