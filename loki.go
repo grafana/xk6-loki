@@ -276,6 +276,7 @@ func (r *Loki) client(c goja.ConstructorCall) *goja.Object {
 		rand:    rand,
 		faker:   faker,
 		flog:    flog,
+		labels:  transformLabelPool(config.Labels),
 	}).ToObject(rt)
 }
 
