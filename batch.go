@@ -2,13 +2,10 @@ package loki
 
 import (
 	"fmt"
-	"math/rand"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/grafana/xk6-loki/flog"
 
 	fake "github.com/brianvoe/gofakeit/v6"
 	"github.com/gogo/protobuf/proto"
@@ -141,6 +138,15 @@ func (b *Batch) createPushRequest() (*logproto.PushRequest, int) {
 	return &req, entriesCount
 }
 
+// labelsFromPool creates a label set from the given label value pool `p`
+func (c *Client) labelsFromPool(p LabelPool) model.LabelSet {
+	ls := make(model.LabelSet, len(p))
+	for k, v := range p {
+		ls[k] = model.LabelValue(v[c.rand.Intn(len(v))])
+	}
+	return ls
+}
+
 // newBatch creates a batch with randomly generated log streams
 func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize int) *Batch {
 	batch := &Batch{
@@ -154,10 +160,10 @@ func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize
 		hostname = "localhost"
 	}
 
-	maxSizePerStream := (minBatchSize + rand.Intn(maxBatchSize-minBatchSize)) / numStreams
+	maxSizePerStream := (minBatchSize + c.rand.Intn(maxBatchSize-minBatchSize)) / numStreams
 
 	for i := 0; i < numStreams; i++ {
-		labels := labelsFromPool(pool)
+		labels := c.labelsFromPool(pool)
 		if _, ok := labels[model.InstanceLabel]; !ok {
 			labels[model.InstanceLabel] = model.LabelValue(fmt.Sprintf("vu%d.%s", state.VUID, hostname))
 		}
@@ -172,7 +178,7 @@ func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize
 		var line string
 		for ; batch.Bytes < maxSizePerStream; batch.Bytes += len(line) {
 			now = time.Now()
-			line = flog.NewLog(logFmt, now)
+			line = c.flog.LogLine(logFmt, now)
 			stream.Entries = append(stream.Entries, logproto.Entry{
 				Timestamp: now,
 				Line:      line,
@@ -181,20 +187,6 @@ func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize
 	}
 
 	return batch
-}
-
-// choice returns a single label value from a list of label values
-func choice(values []string) string {
-	return values[rand.Intn(len(values))]
-}
-
-// labelsFromPool creates a label set from the given label value pool `p`
-func labelsFromPool(p LabelPool) model.LabelSet {
-	ls := make(model.LabelSet, len(p))
-	for k, v := range p {
-		ls[k] = model.LabelValue(choice(v))
-	}
-	return ls
 }
 
 // generateValues returns `n` label values generated with the `ff` gofakeit function

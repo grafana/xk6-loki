@@ -3,6 +3,7 @@ package loki
 
 import (
 	"fmt"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/dop251/goja"
+	"github.com/grafana/xk6-loki/flog"
 	"github.com/prometheus/common/model"
 	"github.com/sirupsen/logrus"
 	"go.k6.io/k6/js/common"
@@ -131,7 +133,7 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 			"namespace": 10,
 			"pod":       50,
 		},
-		RandSeed: 12345, // TODO: actually use something random?
+		RandSeed: time.Now().Unix(),
 	}
 	if len(c.Arguments) > 1 || c.Argument(0).ExportType().Kind() == reflect.String {
 		if err := r.parsePositionalConfig(c, config); err != nil {
@@ -144,8 +146,8 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 	}
 
 	r.logger.Debug(fmt.Sprintf(
-		"url=%s timeout=%s protobufRatio=%f cardinalities=%v",
-		&config.URL, config.Timeout, config.ProtobufRatio, config.Cardinalities,
+		"url=%s timeout=%s protobufRatio=%f cardinalities=%v randSeed=%d",
+		&config.URL, config.Timeout, config.ProtobufRatio, config.Cardinalities, config.RandSeed,
 	))
 
 	if config.TenantID == "" {
@@ -257,7 +259,11 @@ func (r *Loki) client(c goja.ConstructorCall) *goja.Object {
 		common.Throw(rt, fmt.Errorf("Client constructor expect Config as it's argument"))
 	}
 
-	faker := gofakeit.New(config.RandSeed)
+	rand := rand.New(rand.NewSource(config.RandSeed))
+	faker := gofakeit.NewCustom(rand)
+
+	flog := flog.New(rand, faker)
+
 	if len(config.Labels) == 0 {
 		config.Labels = newLabelPool(faker, config.Cardinalities)
 	}
@@ -267,7 +273,9 @@ func (r *Loki) client(c goja.ConstructorCall) *goja.Object {
 		cfg:     config,
 		vu:      r.vu,
 		metrics: r.metrics,
+		rand:    rand,
 		faker:   faker,
+		flog:    flog,
 	}).ToObject(rt)
 }
 

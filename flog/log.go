@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/brianvoe/gofakeit/v6"
 )
 
 const (
@@ -28,124 +26,124 @@ const (
 )
 
 // NewApacheCommonLog creates a log string with apache common log format
-func NewApacheCommonLog(t time.Time) string {
+func (f *Flog) NewApacheCommonLog(t time.Time) string {
 	return fmt.Sprintf(
 		ApacheCommonLog,
-		gofakeit.IPv4Address(),
-		RandAuthUserID(),
+		f.gofakeit.IPv4Address(),
+		f.RandAuthUserID(),
 		t.Format(Apache),
-		gofakeit.HTTPMethod(),
-		RandResourceURI(),
-		RandHTTPVersion(),
-		gofakeit.HTTPStatusCodeSimple(),
-		gofakeit.Number(0, 30000),
+		f.gofakeit.HTTPMethod(),
+		f.RandResourceURI(),
+		f.RandHTTPVersion(),
+		f.gofakeit.HTTPStatusCodeSimple(),
+		f.gofakeit.Number(0, 30000),
 	)
 }
 
 // NewApacheCombinedLog creates a log string with apache combined log format
-func NewApacheCombinedLog(t time.Time) string {
+func (f *Flog) NewApacheCombinedLog(t time.Time) string {
 	return fmt.Sprintf(
 		ApacheCombinedLog,
-		gofakeit.IPv4Address(),
-		RandAuthUserID(),
+		f.gofakeit.IPv4Address(),
+		f.RandAuthUserID(),
 		t.Format(Apache),
-		gofakeit.HTTPMethod(),
-		RandResourceURI(),
-		RandHTTPVersion(),
-		gofakeit.HTTPStatusCodeSimple(),
-		gofakeit.Number(30, 100000),
-		gofakeit.URL(),
-		gofakeit.UserAgent(),
+		f.gofakeit.HTTPMethod(),
+		f.RandResourceURI(),
+		f.RandHTTPVersion(),
+		f.gofakeit.HTTPStatusCodeSimple(),
+		f.gofakeit.Number(30, 100000),
+		f.gofakeit.URL(),
+		f.gofakeit.UserAgent(),
 	)
 }
 
 // NewApacheErrorLog creates a log string with apache error log format
-func NewApacheErrorLog(t time.Time) string {
+func (f *Flog) NewApacheErrorLog(t time.Time) string {
 	return fmt.Sprintf(
 		ApacheErrorLog,
 		t.Format(ApacheError),
-		gofakeit.Word(),
-		gofakeit.LogLevel("apache"),
-		gofakeit.Number(1, 10000),
-		gofakeit.Number(1, 10000),
-		gofakeit.IPv4Address(),
-		gofakeit.Number(1, 65535),
-		gofakeit.HackerPhrase(),
+		f.gofakeit.Word(),
+		f.gofakeit.LogLevel("apache"),
+		f.gofakeit.Number(1, 10000),
+		f.gofakeit.Number(1, 10000),
+		f.gofakeit.IPv4Address(),
+		f.gofakeit.Number(1, 65535),
+		f.gofakeit.HackerPhrase(),
 	)
 }
 
 // NewRFC3164Log creates a log string with syslog (RFC3164) format
-func NewRFC3164Log(t time.Time) string {
+func (f *Flog) NewRFC3164Log(t time.Time) string {
 	return fmt.Sprintf(
 		RFC3164Log,
-		gofakeit.Number(0, 191),
+		f.gofakeit.Number(0, 191),
 		t.Format(RFC3164),
-		strings.ToLower(gofakeit.Username()),
-		gofakeit.Word(),
-		gofakeit.Number(1, 10000),
-		gofakeit.HackerPhrase(),
+		strings.ToLower(f.gofakeit.Username()),
+		f.gofakeit.Word(),
+		f.gofakeit.Number(1, 10000),
+		f.gofakeit.HackerPhrase(),
 	)
 }
 
 // NewRFC5424Log creates a log string with syslog (RFC5424) format
-func NewRFC5424Log(t time.Time) string {
+func (f *Flog) NewRFC5424Log(t time.Time) string {
 	return fmt.Sprintf(
 		RFC5424Log,
-		gofakeit.Number(0, 191),
-		gofakeit.Number(1, 3),
+		f.gofakeit.Number(0, 191),
+		f.gofakeit.Number(1, 3),
 		t.Format(RFC5424),
-		gofakeit.DomainName(),
-		gofakeit.Word(),
-		gofakeit.Number(1, 10000),
-		gofakeit.Number(1, 1000),
+		f.gofakeit.DomainName(),
+		f.gofakeit.Word(),
+		f.gofakeit.Number(1, 10000),
+		f.gofakeit.Number(1, 1000),
 		"-", // TODO: structured data
-		gofakeit.HackerPhrase(),
+		f.gofakeit.HackerPhrase(),
 	)
 }
 
 // NewCommonLogFormat creates a log string with common log format
-func NewCommonLogFormat(t time.Time) string {
+func (f *Flog) NewCommonLogFormat(t time.Time) string {
 	return fmt.Sprintf(
 		CommonLogFormat,
-		gofakeit.IPv4Address(),
-		RandAuthUserID(),
+		f.gofakeit.IPv4Address(),
+		f.RandAuthUserID(),
 		t.Format(CommonLog),
-		gofakeit.HTTPMethod(),
-		RandResourceURI(),
-		RandHTTPVersion(),
-		gofakeit.HTTPStatusCodeSimple(),
-		gofakeit.Number(0, 30000),
+		f.gofakeit.HTTPMethod(),
+		f.RandResourceURI(),
+		f.RandHTTPVersion(),
+		f.gofakeit.HTTPStatusCodeSimple(),
+		f.gofakeit.Number(0, 30000),
 	)
 }
 
 // NewJSONLogFormat creates a log string with json log format
-func NewJSONLogFormat(t time.Time) string {
+func (f *Flog) NewJSONLogFormat(t time.Time) string {
 	return fmt.Sprintf(
 		JSONLogFormat,
-		gofakeit.IPv4Address(),
-		RandAuthUserID(),
+		f.gofakeit.IPv4Address(),
+		f.RandAuthUserID(),
 		t.Format(CommonLog),
-		gofakeit.HTTPMethod(),
-		RandResourceURI(),
-		RandHTTPVersion(),
-		gofakeit.HTTPStatusCodeSimple(),
-		gofakeit.Number(0, 30000),
-		gofakeit.URL(),
+		f.gofakeit.HTTPMethod(),
+		f.RandResourceURI(),
+		f.RandHTTPVersion(),
+		f.gofakeit.HTTPStatusCodeSimple(),
+		f.gofakeit.Number(0, 30000),
+		f.gofakeit.URL(),
 	)
 }
 
 // NewLogFmtLogFormat creates a log string with logfmt log format
-func NewLogFmtLogFormat(t time.Time) string {
+func (f *Flog) NewLogFmtLogFormat(t time.Time) string {
 	return fmt.Sprintf(
 		LogFmtLogFormat,
-		gofakeit.IPv4Address(),
-		RandAuthUserID(),
+		f.gofakeit.IPv4Address(),
+		f.RandAuthUserID(),
 		t.Format(RFC5424),
-		gofakeit.HTTPMethod(),
-		RandResourceURI(),
-		RandHTTPVersion(),
-		gofakeit.HTTPStatusCodeSimple(),
-		gofakeit.Number(0, 30000),
-		gofakeit.URL(),
+		f.gofakeit.HTTPMethod(),
+		f.RandResourceURI(),
+		f.RandHTTPVersion(),
+		f.gofakeit.HTTPStatusCodeSimple(),
+		f.gofakeit.Number(0, 30000),
+		f.gofakeit.URL(),
 	)
 }
