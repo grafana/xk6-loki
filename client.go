@@ -11,8 +11,8 @@ import (
 	"path"
 	"time"
 
+	"github.com/brianvoe/gofakeit/v6"
 	"github.com/grafana/loki/pkg/logqlmodel/stats"
-	"github.com/sirupsen/logrus"
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/lib/netext/httpext"
@@ -31,9 +31,9 @@ const (
 type Client struct {
 	vu      modules.VU
 	client  *http.Client
-	logger  logrus.FieldLogger
 	cfg     *Config
 	metrics lokiMetrics
+	faker   *gofakeit.Faker
 }
 
 type Config struct {
@@ -41,8 +41,10 @@ type Config struct {
 	UserAgent     string
 	Timeout       time.Duration
 	TenantID      string
+	Cardinalities map[string]int
 	Labels        LabelPool
 	ProtobufRatio float64
+	RandSeed      int64
 }
 
 func (c *Client) InstantQuery(logQuery string, limit int) (httpext.Response, error) {
