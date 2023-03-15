@@ -9,7 +9,6 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/grafana/loki v1.6.2-0.20230310093109-e2ac2d50e2d7
 	github.com/mailru/easyjson v0.7.7
-	github.com/mingrammer/flog v0.4.3
 	github.com/prometheus/common v0.42.0
 	go.k6.io/k6 v0.43.1
 )
@@ -22,7 +21,6 @@ require (
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/armon/go-metrics v0.4.0 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
-	github.com/brianvoe/gofakeit v3.11.5+incompatible // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/coreos/go-semver v0.3.0 // indirect
 	github.com/coreos/go-systemd/v22 v22.4.0 // indirect
@@ -88,7 +86,6 @@ require (
 	github.com/serenize/snaker v0.0.0-20201027110005-a7ad2135616e // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
-	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/uber/jaeger-client-go v2.30.0+incompatible // indirect
@@ -120,8 +117,6 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/mingrammer/flog => github.com/chaudum/flog v0.4.4-0.20220419113107-eb2f67f18b99
 
 replace google.golang.org/grpc => google.golang.org/grpc v1.45.0
 
