@@ -13,6 +13,7 @@ import (
 
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/grafana/loki/pkg/logqlmodel/stats"
+	"github.com/grafana/xk6-loki/flog"
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/lib/netext/httpext"
@@ -33,7 +34,9 @@ type Client struct {
 	client  *http.Client
 	cfg     *Config
 	metrics lokiMetrics
+	rand    *rand.Rand
 	faker   *gofakeit.Faker
+	flog    *flog.Flog
 }
 
 type Config struct {
@@ -254,7 +257,7 @@ func (c *Client) pushBatch(batch *Batch) (httpext.Response, error) {
 
 	// Use snappy encoded Protobuf for 90% of the requests
 	// Use JSON encoding for 10% of the requests
-	encodeSnappy := rand.Float64() < c.cfg.ProtobufRatio
+	encodeSnappy := c.rand.Float64() < c.cfg.ProtobufRatio
 	if encodeSnappy {
 		buf, _, err = batch.encodeSnappy()
 	} else {
