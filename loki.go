@@ -2,7 +2,6 @@
 package loki
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -12,6 +11,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/dop251/goja"
 	"github.com/prometheus/common/model"
+	"github.com/sirupsen/logrus"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/metrics"
@@ -54,7 +54,8 @@ func (*LokiRoot) NewModuleInstance(vu modules.VU) modules.Instance {
 		common.Throw(vu.Runtime(), err)
 	}
 
-	return &Loki{vu: vu, metrics: m}
+	logger := vu.InitEnv().Logger.WithField("component", "xk6-loki")
+	return &Loki{vu: vu, metrics: m, logger: logger}
 }
 
 func registerMetrics(vu modules.VU) (lokiMetrics, error) {
@@ -99,6 +100,7 @@ func registerMetrics(vu modules.VU) (lokiMetrics, error) {
 type Loki struct {
 	vu      modules.VU
 	metrics lokiMetrics
+	logger  logrus.FieldLogger
 }
 
 func (r *Loki) Exports() modules.Exports {
@@ -117,11 +119,7 @@ func (r *Loki) Exports() modules.Exports {
 // const cfg = new loki.Config(url);
 // ```
 func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
-	initEnv := r.vu.InitEnv()
 	rt := r.vu.Runtime()
-	if initEnv == nil {
-		common.Throw(rt, errors.New("loki.Config() needs to be called in the init context"))
-	}
 
 	// The default config, which we might overwrite below
 	config := &Config{
@@ -145,13 +143,13 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 		}
 	}
 
-	initEnv.Logger.Debug(fmt.Sprintf(
+	r.logger.Debug(fmt.Sprintf(
 		"url=%s timeout=%s protobufRatio=%f cardinalities=%v",
 		&config.URL, config.Timeout, config.ProtobufRatio, config.Cardinalities,
 	))
 
 	if config.TenantID == "" {
-		initEnv.Logger.Warn("Running in multi-tenant-mode. Each VU has its own X-Scope-OrgID")
+		r.logger.Warn("Running in multi-tenant-mode. Each VU has its own X-Scope-OrgID")
 	}
 
 	return rt.ToValue(config).ToObject(rt)
