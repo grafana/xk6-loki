@@ -176,7 +176,11 @@ func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize
 			common.Throw(c.vu.Runtime(), fmt.Errorf("%s is not a valid log format", logFmt))
 		}
 		var line string
-		for ; batch.Bytes < maxSizePerStream; batch.Bytes += len(line) {
+
+		// We have batch.Bytes so far, and each stream is allotted around
+		// maxSizePerStream, so our final byte this stream should be:
+		streamMaxByte := maxSizePerStream * (i + 1)
+		for ; batch.Bytes < streamMaxByte; batch.Bytes += len(line) {
 			now = time.Now()
 			line = c.flog.LogLine(logFmt, now)
 			stream.Entries = append(stream.Entries, logproto.Entry{
