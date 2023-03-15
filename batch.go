@@ -8,12 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/grafana/xk6-loki/flog"
+
 	fake "github.com/brianvoe/gofakeit/v6"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/grafana/loki/pkg/logproto"
 	json "github.com/mailru/easyjson"
-	"github.com/mingrammer/flog/flog"
 	"github.com/prometheus/common/model"
 	"go.k6.io/k6/js/common"
 )
