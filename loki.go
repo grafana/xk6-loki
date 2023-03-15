@@ -251,6 +251,10 @@ func (r *Loki) parseConfigObject(c *goja.Object, config *Config) error {
 		}
 	}
 
+	if v := c.Get("sendIndexLabels"); !isNully(v) {
+		config.SendIndexLabels = v.ToBoolean()
+	}
+
 	return nil
 }
 

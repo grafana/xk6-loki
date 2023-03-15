@@ -177,6 +177,20 @@ func (c *Client) getHCValues() [][2]string {
 	return result
 }
 
+func (c *Client) formatIndexLabels(labels [][2]string) string {
+	if !c.cfg.SendIndexLabels {
+		return ""
+	}
+
+	result := make([]string, len(labels))
+	for i, hcv := range labels {
+		// TODO: figure out if this is the correct encoding?
+		result[i] = hcv[0] + "=" + hcv[1]
+	}
+
+	return strings.Join(result, ",")
+}
+
 // newBatch creates a batch with randomly generated log streams
 func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 	batch := &Batch{
@@ -216,8 +230,9 @@ func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 			hcValues := c.getHCValues()
 			line = c.flog.LogLine(logFmt, now, hcValues)
 			stream.Entries = append(stream.Entries, logproto.Entry{
-				Timestamp: now,
-				Line:      line,
+				Timestamp:   now,
+				Line:        line,
+				IndexLabels: c.formatIndexLabels(hcValues),
 			})
 		}
 	}

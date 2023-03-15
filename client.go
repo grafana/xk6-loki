@@ -70,7 +70,8 @@ type Config struct {
 	ProtobufRatio float64
 	RandSeed      int64
 
-	HCLabels []HighCardinalityLabel
+	HCLabels        []HighCardinalityLabel
+	SendIndexLabels bool
 }
 
 func (c *Client) InstantQuery(logQuery string, limit int) (httpext.Response, error) {
