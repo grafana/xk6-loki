@@ -3,6 +3,7 @@ package loki
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/grafana/loki/pkg/logqlmodel/stats"
-	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/lib"
@@ -259,12 +259,12 @@ func (c *Client) pushBatch(batch *Batch) (httpext.Response, error) {
 		buf, _, err = batch.encodeJSON()
 	}
 	if err != nil {
-		return *httpext.NewResponse(), errors.Wrap(err, "failed to encode payload")
+		return *httpext.NewResponse(), fmt.Errorf("failed to encode payload: %w", err)
 	}
 
 	res, err := c.send(state, buf, encodeSnappy)
 	if err != nil {
-		return *httpext.NewResponse(), errors.Wrap(err, "push request failed")
+		return *httpext.NewResponse(), fmt.Errorf("push request failed: %w", err)
 	}
 	res.Request.Body = ""
 	if IsSuccessfulResponse(res.Status) {
@@ -333,7 +333,7 @@ func (c *Client) reportMetricsFromStats(response httpext.Response, queryType Que
 	responseWithStats := responseWithStats{}
 	err := json.Unmarshal([]byte(responseBody), &responseWithStats)
 	if err != nil {
-		return errors.Wrap(err, "error unmarshalling response body to response with stats")
+		return fmt.Errorf("error unmarshalling response body to response with stats: %w", err)
 	}
 	now := time.Now()
 	ctm := c.vu.State().Tags.GetCurrentValues()

@@ -2,6 +2,7 @@
 package loki
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -9,7 +10,6 @@ import (
 
 	gofakeit "github.com/brianvoe/gofakeit/v6"
 	"github.com/dop251/goja"
-	"github.com/pkg/errors"
 	"github.com/prometheus/common/model"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/js/modules"
