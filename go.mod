@@ -10,6 +10,7 @@ require (
 	github.com/grafana/loki v1.6.2-0.20230310093109-e2ac2d50e2d7
 	github.com/mailru/easyjson v0.7.7
 	github.com/prometheus/common v0.42.0
+	github.com/sirupsen/logrus v1.9.0
 	go.k6.io/k6 v0.43.1
 )
 
@@ -84,7 +85,6 @@ require (
 	github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529 // indirect
 	github.com/sercand/kuberesolver v2.4.0+incompatible // indirect
 	github.com/serenize/snaker v0.0.0-20201027110005-a7ad2135616e // indirect
-	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spf13/afero v1.9.3 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
