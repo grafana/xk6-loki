@@ -149,6 +149,34 @@ func (c *Client) getRandomLabelSet() model.LabelSet {
 	return ls
 }
 
+func (c *Client) getHCValues() [][2]string {
+	result := [][2]string{}
+
+	for _, hcv := range c.hcState {
+		if c.rand.Float64() > hcv.Probability {
+			// continue, this high-cardinality value doesn't occur on this log line
+		}
+
+		// Regenerate value if its the start or we ran out
+		if hcv.RemCount <= 0 {
+			// Reset the counter back to AvgLines +/- 10%
+			hcv.RemCount = int(float64(hcv.AvgLines)*1.1 - c.rand.Float64()/5)
+
+			// TODO: support more value generators?
+			if hcv.Generator == "randInt" {
+				hcv.CurrentValue = strconv.FormatInt(c.rand.Int63n(50000), 10)
+			} else {
+				hcv.CurrentValue = fmt.Sprintf("%016x", c.rand.Uint64())
+			}
+		}
+
+		hcv.RemCount--
+		result = append(result, [2]string{hcv.Name, hcv.CurrentValue})
+	}
+
+	return result
+}
+
 // newBatch creates a batch with randomly generated log streams
 func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 	batch := &Batch{
@@ -184,7 +212,9 @@ func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 		streamMaxByte := maxSizePerStream * (i + 1)
 		for ; batch.Bytes < streamMaxByte; batch.Bytes += len(line) {
 			now = time.Now()
-			line = c.flog.LogLine(logFmt, now)
+
+			hcValues := c.getHCValues()
+			line = c.flog.LogLine(logFmt, now, hcValues)
 			stream.Entries = append(stream.Entries, logproto.Entry{
 				Timestamp: now,
 				Line:      line,

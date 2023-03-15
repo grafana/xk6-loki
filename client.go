@@ -44,6 +44,20 @@ type Client struct {
 	faker   *gofakeit.Faker
 	flog    *flog.Flog
 	labels  []labelValues
+	hcState []*HighCardinalityLabelState
+}
+
+type HighCardinalityLabel struct {
+	Name        string  `js:"name"`
+	AvgLines    int     `js:"avgLines"`
+	Probability float64 `js:"probability"`
+	Generator   string  `js:"generator"`
+}
+
+type HighCardinalityLabelState struct {
+	HighCardinalityLabel
+	RemCount     int
+	CurrentValue string
 }
 
 type Config struct {
@@ -55,6 +69,8 @@ type Config struct {
 	Labels        LabelPool
 	ProtobufRatio float64
 	RandSeed      int64
+
+	HCLabels []HighCardinalityLabel
 }
 
 func (c *Client) InstantQuery(logQuery string, limit int) (httpext.Response, error) {

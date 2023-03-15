@@ -245,6 +245,12 @@ func (r *Loki) parseConfigObject(c *goja.Object, config *Config) error {
 		config.RandSeed = v.ToInteger()
 	}
 
+	if v := c.Get("highCardinalityLabels"); !isNully(v) {
+		if err := rt.ExportTo(v, &config.HCLabels); err != nil {
+			return fmt.Errorf("could not parse hight cardinality labels: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -268,6 +274,11 @@ func (r *Loki) client(c goja.ConstructorCall) *goja.Object {
 		config.Labels = newLabelPool(faker, config.Cardinalities)
 	}
 
+	hcState := make([]*HighCardinalityLabelState, len(config.HCLabels))
+	for i, v := range config.HCLabels {
+		hcState[i] = &HighCardinalityLabelState{HighCardinalityLabel: v}
+	}
+
 	return rt.ToValue(&Client{
 		client:  &http.Client{},
 		cfg:     config,
@@ -277,6 +288,7 @@ func (r *Loki) client(c goja.ConstructorCall) *goja.Object {
 		faker:   faker,
 		flog:    flog,
 		labels:  transformLabelPool(config.Labels),
+		hcState: hcState,
 	}).ToObject(rt)
 }
 
