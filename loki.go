@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"reflect"
 	"time"
 
-	gofakeit "github.com/brianvoe/gofakeit/v6"
+	"github.com/brianvoe/gofakeit/v6"
 	"github.com/dop251/goja"
 	"github.com/prometheus/common/model"
 	"go.k6.io/k6/js/common"
@@ -118,66 +119,133 @@ func (r *Loki) Exports() modules.Exports {
 func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 	initEnv := r.vu.InitEnv()
 	rt := r.vu.Runtime()
-
 	if initEnv == nil {
-		common.Throw(rt, errors.New("Client constructor needs to be called in the init context"))
-	}
-	urlString := c.Argument(0).String()
-
-	timeoutMs := int(c.Argument(1).ToInteger())
-	if timeoutMs == 0 {
-		timeoutMs = DefaultPushTimeout
+		common.Throw(rt, errors.New("loki.Config() needs to be called in the init context"))
 	}
 
-	protobufRatio := c.Argument(2).ToFloat()
-	if protobufRatio == 0 {
-		protobufRatio = DefaultProtobufRatio
+	// The default config, which we might overwrite below
+	config := &Config{
+		Timeout:       time.Duration(DefaultPushTimeout) * time.Millisecond,
+		ProtobufRatio: DefaultProtobufRatio,
+		UserAgent:     DefaultUserAgent,
+		Cardinalities: map[string]int{
+			"app":       5,
+			"namespace": 10,
+			"pod":       50,
+		},
+		RandSeed: 12345, // TODO: actually use something random?
+	}
+	if len(c.Arguments) > 1 || c.Argument(0).ExportType().Kind() == reflect.String {
+		if err := r.parsePositionalConfig(c, config); err != nil {
+			common.Throw(rt, fmt.Errorf("could not parse positional loki config: %w", err))
+		}
+	} else {
+		if err := r.parseConfigObject(c.Argument(0).ToObject(rt), config); err != nil {
+			common.Throw(rt, fmt.Errorf("could not parse loki config object: %w", err))
+		}
 	}
 
-	var cardinalities map[string]int
-	if err := rt.ExportTo(c.Argument(3), &cardinalities); err != nil {
-		common.Throw(rt, fmt.Errorf("Config constructor expects map of string to integers as forth argument"))
-	}
+	initEnv.Logger.Debug(fmt.Sprintf(
+		"url=%s timeout=%s protobufRatio=%f cardinalities=%v",
+		&config.URL, config.Timeout, config.ProtobufRatio, config.Cardinalities,
+	))
 
-	var labels LabelPool
-	if err := rt.ExportTo(c.Argument(4), &labels); err != nil {
-		common.Throw(rt, fmt.Errorf("Config constructor expects Labels as fifth argument"))
-	}
-
-	initEnv.Logger.Debug(fmt.Sprintf("url=%s timeoutMs=%d protobufRatio=%f cardinalities=%v", urlString, timeoutMs, protobufRatio, cardinalities))
-
-	faker := gofakeit.New(12345)
-
-	u, err := url.Parse(urlString)
-	if err != nil {
-		panic(err)
-	}
-
-	if u.User.Username() == "" {
+	if config.TenantID == "" {
 		initEnv.Logger.Warn("Running in multi-tenant-mode. Each VU has its own X-Scope-OrgID")
 	}
 
-	if len(labels) == 0 {
-		if len(cardinalities) == 0 {
-			cardinalities = map[string]int{
-				"app":       5,
-				"namespace": 10,
-				"pod":       50,
-			}
-		}
-		labels = newLabelPool(faker, cardinalities)
-	}
-
-	config := &Config{
-		URL:           *u,
-		UserAgent:     DefaultUserAgent,
-		TenantID:      u.User.Username(),
-		Timeout:       time.Duration(timeoutMs) * time.Millisecond,
-		Labels:        labels,
-		ProtobufRatio: protobufRatio,
-	}
-
 	return rt.ToValue(config).ToObject(rt)
+}
+
+func (r *Loki) parsePositionalConfig(c goja.ConstructorCall, config *Config) error {
+	rt := r.vu.Runtime()
+
+	urlString := c.Argument(0).String()
+	u, err := url.Parse(urlString)
+	if err != nil {
+		return fmt.Errorf("invalid loki URL: %w", err)
+	}
+	config.URL = *u
+
+	if user := u.User.Username(); user != "" {
+		config.TenantID = user
+	}
+
+	if len(c.Arguments) > 1 {
+		config.Timeout = time.Duration(c.Argument(1).ToInteger()) * time.Millisecond
+	}
+
+	if len(c.Arguments) > 2 {
+		config.ProtobufRatio = c.Argument(2).ToFloat()
+	}
+
+	if len(c.Arguments) > 3 {
+		if err := rt.ExportTo(c.Argument(3), &config.Cardinalities); err != nil {
+			return fmt.Errorf("Config constructor expects map of string to integers as forth argument")
+		}
+	}
+
+	if len(c.Arguments) > 4 {
+		if err := rt.ExportTo(c.Argument(4), &config.Labels); err != nil {
+			return fmt.Errorf("Config constructor expects Labels as fifth argument")
+		}
+	}
+
+	return nil
+}
+
+func isNully(v goja.Value) bool {
+	return v == nil || goja.IsUndefined(v) || goja.IsNull(v)
+}
+
+func (r *Loki) parseConfigObject(c *goja.Object, config *Config) error {
+	rt := r.vu.Runtime()
+	if v := c.Get("url"); !isNully(v) {
+		u, err := url.Parse(v.String())
+		if err != nil {
+			return fmt.Errorf("invalid loki URL: %w", err)
+		}
+		config.URL = *u
+
+		if user := u.User.Username(); user != "" {
+			config.TenantID = user
+		}
+	}
+
+	if v := c.Get("userAgent"); !isNully(v) {
+		config.UserAgent = v.String()
+	}
+
+	if v := c.Get("timeout"); !isNully(v) {
+		config.Timeout = time.Duration(v.ToInteger()) * time.Millisecond
+	}
+
+	if v := c.Get("tenantID"); !isNully(v) {
+		// This can overwrite the TenantID, even if we set it via the URL
+		config.TenantID = v.String()
+	}
+
+	if v := c.Get("cardinalities"); !isNully(v) {
+		if err := rt.ExportTo(v, &config.Cardinalities); err != nil {
+			return fmt.Errorf("cardinatities should be a map of string to integers: %w", err)
+		}
+	}
+
+	if v := c.Get("labels"); !isNully(v) {
+		if err := rt.ExportTo(v, &config.Labels); err != nil {
+			return fmt.Errorf("could not parse labels: %w", err)
+		}
+	}
+
+	if v := c.Get("protobufRatio"); !isNully(v) {
+		config.ProtobufRatio = v.ToFloat()
+	}
+
+	if v := c.Get("randSeed"); !isNully(v) {
+		config.RandSeed = v.ToInteger()
+	}
+
+	return nil
 }
 
 // client provides a constructor interface for the Config for the Javascript runtime
@@ -190,11 +258,18 @@ func (r *Loki) client(c goja.ConstructorCall) *goja.Object {
 	if !ok {
 		common.Throw(rt, fmt.Errorf("Client constructor expect Config as it's argument"))
 	}
+
+	faker := gofakeit.New(config.RandSeed)
+	if len(config.Labels) == 0 {
+		config.Labels = newLabelPool(faker, config.Cardinalities)
+	}
+
 	return rt.ToValue(&Client{
 		client:  &http.Client{},
 		cfg:     config,
 		vu:      r.vu,
 		metrics: r.metrics,
+		faker:   faker,
 	}).ToObject(rt)
 }
 
