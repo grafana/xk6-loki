@@ -14,6 +14,7 @@ import (
 	"github.com/brianvoe/gofakeit/v6"
 	"github.com/grafana/loki/pkg/logqlmodel/stats"
 	"github.com/grafana/xk6-loki/flog"
+	"github.com/prometheus/common/model"
 	"go.k6.io/k6/js/modules"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/lib/netext/httpext"
@@ -29,6 +30,11 @@ const (
 	TenantPrefix = "xk6-tenant"
 )
 
+type labelValues struct {
+	name   model.LabelName
+	values []string
+}
+
 type Client struct {
 	vu      modules.VU
 	client  *http.Client
@@ -37,6 +43,7 @@ type Client struct {
 	rand    *rand.Rand
 	faker   *gofakeit.Faker
 	flog    *flog.Flog
+	labels  []labelValues
 }
 
 type Config struct {
@@ -242,7 +249,7 @@ func (c *Client) PushParameterized(streams, minBatchSize, maxBatchSize int) (htt
 		return *httpext.NewResponse(), errors.New("state is nil")
 	}
 
-	batch := c.newBatch(c.cfg.Labels, streams, minBatchSize, maxBatchSize)
+	batch := c.newBatch(streams, minBatchSize, maxBatchSize)
 	return c.pushBatch(batch)
 }
 

@@ -38,12 +38,13 @@ func BenchmarkNewBatch(b *testing.B) {
 	labels := newLabelPool(faker, cardinalities)
 
 	c := Client{
-		vu: vu,
+		vu:     vu,
+		labels: transformLabelPool(labels),
 	}
 	b.ResetTimer()
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
-		_ = c.newBatch(labels, streams, minBatchSize, maxBatchSize)
+		_ = c.newBatch(streams, minBatchSize, maxBatchSize)
 	}
 }
 
@@ -76,9 +77,10 @@ func BenchmarkEncode(b *testing.B) {
 	labels := newLabelPool(faker, cardinalities)
 
 	c := Client{
-		vu: vu,
+		vu:     vu,
+		labels: transformLabelPool(labels),
 	}
-	batch := c.newBatch(labels, streams, minBatchSize, maxBatchSize)
+	batch := c.newBatch(streams, minBatchSize, maxBatchSize)
 
 	b.Run("encode protobuf", func(b *testing.B) {
 		b.ReportAllocs()

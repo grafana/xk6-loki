@@ -3,6 +3,7 @@ package loki
 import (
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -138,17 +139,18 @@ func (b *Batch) createPushRequest() (*logproto.PushRequest, int) {
 	return &req, entriesCount
 }
 
-// labelsFromPool creates a label set from the given label value pool `p`
-func (c *Client) labelsFromPool(p LabelPool) model.LabelSet {
-	ls := make(model.LabelSet, len(p))
-	for k, v := range p {
-		ls[k] = model.LabelValue(v[c.rand.Intn(len(v))])
+// getRandomLabelSet creates a label set from the possible Client labels
+func (c *Client) getRandomLabelSet() model.LabelSet {
+	// TODO: improve it so there is no possibility to return duplicate label sets for the same batch?
+	ls := make(model.LabelSet, len(c.labels))
+	for _, label := range c.labels {
+		ls[label.name] = model.LabelValue(label.values[c.rand.Intn(len(label.values))])
 	}
 	return ls
 }
 
 // newBatch creates a batch with randomly generated log streams
-func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize int) *Batch {
+func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 	batch := &Batch{
 		Streams:   make(map[string]*logproto.Stream, numStreams),
 		CreatedAt: time.Now(),
@@ -163,7 +165,7 @@ func (c *Client) newBatch(pool LabelPool, numStreams, minBatchSize, maxBatchSize
 	maxSizePerStream := (minBatchSize + c.rand.Intn(maxBatchSize-minBatchSize)) / numStreams
 
 	for i := 0; i < numStreams; i++ {
-		labels := c.labelsFromPool(pool)
+		labels := c.getRandomLabelSet()
 		if _, ok := labels[model.InstanceLabel]; !ok {
 			labels[model.InstanceLabel] = model.LabelValue(fmt.Sprintf("vu%d.%s", state.VUID, hostname))
 		}
@@ -204,6 +206,7 @@ func generateValues(ff FakeFunc, n int) []string {
 
 // newLabelPool creates a "pool" of values for each label name
 func newLabelPool(faker *fake.Faker, cardinalities map[string]int) LabelPool {
+	// TODO: fix so that other cardinalities values work
 	lb := LabelPool{
 		"format": []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json", "logfmt"}, // needs to match the available flog formats
 		"os":     []string{"darwin", "linux", "windows"},
@@ -224,4 +227,21 @@ func newLabelPool(faker *fake.Faker, cardinalities map[string]int) LabelPool {
 		lb["word"] = generateValues(faker.Noun, n)
 	}
 	return lb
+}
+
+func transformLabelPool(pool LabelPool) []labelValues {
+	keys := make([]string, 0, len(pool))
+	for k := range pool {
+		keys = append(keys, string(k))
+	}
+	sort.Strings(keys)
+	result := make([]labelValues, len(pool))
+	for i, k := range keys {
+		ln := model.LabelName(k)
+		result[i] = labelValues{
+			name:   ln,
+			values: pool[ln],
+		}
+	}
+	return result
 }
