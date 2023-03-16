@@ -54,6 +54,7 @@ type HighCardinalityLabel struct {
 	LineCountJitter float64 `js:"lineCountJitter"` // should be between 0 and 1
 	Probability     float64 `js:"probability"`     // should be between 0 and 1
 	Generator       string  `js:"generator"`
+	Cardinality     int64   `js:"cardinality"` // int64 should be good enough for everyone...
 }
 
 type HighCardinalityLabelState struct {

@@ -169,9 +169,9 @@ func (c *Client) getHCValues() [][2]string {
 
 			// TODO: support more value generators?
 			if hcv.Generator == "randInt" {
-				hcv.CurrentValue = strconv.FormatInt(c.rand.Int63n(50000), 10)
+				hcv.CurrentValue = strconv.FormatInt(c.rand.Int63n(hcv.Cardinality), 10)
 			} else {
-				hcv.CurrentValue = fmt.Sprintf("%016x", c.rand.Uint64())
+				hcv.CurrentValue = fmt.Sprintf("%016x", c.rand.Int63n(hcv.Cardinality))
 			}
 
 			scState := lib.GetScenarioState(c.vu.Context())

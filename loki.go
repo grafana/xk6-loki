@@ -3,6 +3,7 @@ package loki
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -248,6 +249,24 @@ func (r *Loki) parseConfigObject(c *goja.Object, config *Config) error {
 	if v := c.Get("highCardinalityLabels"); !isNully(v) {
 		if err := rt.ExportTo(v, &config.HCLabels); err != nil {
 			return fmt.Errorf("could not parse hight cardinality labels: %w", err)
+		}
+
+		for k, v := range config.HCLabels {
+			if v.LineCount <= 0 {
+				return fmt.Errorf("Invalid lineCount value for HC %s", v.Name)
+			}
+			if v.Probability < math.SmallestNonzeroFloat64 || v.Probability > 1 {
+				return fmt.Errorf("Invalid probability value for HC %s", v.Name)
+			}
+			if v.LineCountJitter < math.SmallestNonzeroFloat64 || v.Probability > 1 {
+				return fmt.Errorf("Invalid lineCountJitter value for HC %s", v.Name)
+			}
+			if v.Cardinality == 0 {
+				config.HCLabels[k].Cardinality = math.MaxInt64
+			}
+			if v.Generator == "" {
+				config.HCLabels[k].Generator = "randInt"
+			}
 		}
 	}
 
