@@ -15,6 +15,7 @@ import (
 	json "github.com/mailru/easyjson"
 	"github.com/prometheus/common/model"
 	"go.k6.io/k6/js/common"
+	"go.k6.io/k6/lib"
 )
 
 var LabelValuesFormat = []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json", "logfmt"}
@@ -153,14 +154,18 @@ func (c *Client) getHCValues() [][2]string {
 	result := [][2]string{}
 
 	for _, hcv := range c.hcState {
-		if c.rand.Float64() > hcv.Probability {
-			// continue, this high-cardinality value doesn't occur on this log line
+		if hcv.SkipCount > 0 {
+			hcv.SkipCount-- // skip,
+			continue
 		}
 
 		// Regenerate value if its the start or we ran out
 		if hcv.RemCount <= 0 {
-			// Reset the counter back to AvgLines +/- 10%
-			hcv.RemCount = int(float64(hcv.AvgLines)*1.1 - c.rand.Float64()/5)
+			// Reset the line counters back to their configured
+			// lineCount/skipLineCount values, +/- rand(0:lineCountJitter)%
+			jitter := (1 + hcv.LineCountJitter*(2*c.rand.Float64()-1))
+			hcv.RemCount = int(float64(hcv.LineCount) * jitter)
+			hcv.SkipCount = int(float64(hcv.SkipLineCount) * jitter)
 
 			// TODO: support more value generators?
 			if hcv.Generator == "randInt" {
@@ -168,6 +173,18 @@ func (c *Client) getHCValues() [][2]string {
 			} else {
 				hcv.CurrentValue = fmt.Sprintf("%016x", c.rand.Uint64())
 			}
+
+			scState := lib.GetScenarioState(c.vu.Context())
+			c.vu.State().Logger.
+				WithField("scenario", scState.Name).WithField(hcv.Name, hcv.CurrentValue).Infof(
+				"New HC value for '%s', skip next %d lines, then use for %d lines with %.0f%% probability",
+				hcv.Name, hcv.SkipCount, hcv.RemCount, hcv.Probability*100,
+			)
+			continue
+		}
+
+		if c.rand.Float64() > hcv.Probability {
+			continue // this high-cardinality value doesn't occur on this log line
 		}
 
 		hcv.RemCount--

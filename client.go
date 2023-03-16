@@ -48,15 +48,18 @@ type Client struct {
 }
 
 type HighCardinalityLabel struct {
-	Name        string  `js:"name"`
-	AvgLines    int     `js:"avgLines"`
-	Probability float64 `js:"probability"`
-	Generator   string  `js:"generator"`
+	Name            string  `js:"name"`
+	LineCount       int     `js:"lineCount"`
+	SkipLineCount   int     `js:"skipLineCount"`
+	LineCountJitter float64 `js:"lineCountJitter"` // should be between 0 and 1
+	Probability     float64 `js:"probability"`     // should be between 0 and 1
+	Generator       string  `js:"generator"`
 }
 
 type HighCardinalityLabelState struct {
 	HighCardinalityLabel
 	RemCount     int
+	SkipCount    int
 	CurrentValue string
 }
 
