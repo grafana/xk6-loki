@@ -14,6 +14,7 @@ import (
 	"github.com/grafana/loki/pkg/logproto"
 	json "github.com/mailru/easyjson"
 	"github.com/prometheus/common/model"
+	"github.com/sirupsen/logrus"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/lib"
 )
@@ -175,8 +176,13 @@ func (c *Client) getHCValues() [][2]string {
 			}
 
 			scState := lib.GetScenarioState(c.vu.Context())
-			c.vu.State().Logger.
-				WithField("scenario", scState.Name).WithField(hcv.Name, hcv.CurrentValue).Infof(
+			logger := c.vu.State().Logger.WithField("scenario", scState.Name).WithField(hcv.Name, hcv.CurrentValue)
+			level := logrus.DebugLevel
+			if c.rand.Float32() < 0.01 {
+				level = logrus.InfoLevel // only show ~1% of these logs by default
+			}
+			logger.Logf(
+				level,
 				"New HC value for '%s', skip next %d lines, then use for %d lines with %.0f%% probability",
 				hcv.Name, hcv.SkipCount, hcv.RemCount, hcv.Probability*100,
 			)
@@ -223,6 +229,7 @@ func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 
 	maxSizePerStream := (minBatchSize + c.rand.Intn(maxBatchSize-minBatchSize)) / numStreams
 
+	shownSample := false
 	for i := 0; i < numStreams; i++ {
 		labels := c.getRandomLabelSet()
 		if _, ok := labels[model.InstanceLabel]; !ok {
@@ -246,11 +253,21 @@ func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 
 			hcValues := c.getHCValues()
 			line = c.flog.LogLine(logFmt, now, hcValues)
+			indexLabels := c.formatIndexLabels(hcValues)
 			stream.Entries = append(stream.Entries, logproto.Entry{
 				Timestamp:   now,
 				Line:        line,
-				IndexLabels: c.formatIndexLabels(hcValues),
+				IndexLabels: indexLabels,
 			})
+
+			// Have a ~0.01% to show this line sample if we haven't shown one before
+			if len(hcValues) > 0 && !shownSample && c.rand.Float32() < 0.0001 {
+				shownSample = true
+				scState := lib.GetScenarioState(c.vu.Context())
+				state.Logger.
+					WithField("scenario", scState.Name).WithField("labels", labels.String()).
+					WithField("indexLabels", indexLabels).Infof("Sample log line: %s", line)
+			}
 		}
 	}
 
