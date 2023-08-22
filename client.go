@@ -51,6 +51,7 @@ type Config struct {
 	UserAgent     string
 	Timeout       time.Duration
 	TenantID      string
+	Actor         string
 	Cardinalities map[string]int
 	Labels        LabelPool
 	ProtobufRatio float64
@@ -204,6 +205,9 @@ func (c *Client) sendQuery(q *Query) (httpext.Response, error) {
 
 	r.Header.Set("User-Agent", c.cfg.UserAgent)
 	r.Header.Set("Accept", ContentTypeJSON)
+	if c.cfg.Actor != "" {
+		r.Header.Set("X-Grafana-User", c.cfg.Actor)
+	}
 	if c.cfg.TenantID != "" {
 		r.Header.Set("X-Scope-OrgID", c.cfg.TenantID)
 	} else {
