@@ -1,0 +1,43 @@
+---
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '0 5 * * 6'
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    name: "Build w/ Go v${{ matrix.go }}"
+    strategy:
+      matrix:
+        go: [ '1.20', '1.21' ]
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout code
+
+      - uses: actions/setup-go@v3
+        name: Install Go v${{ matrix.go }}
+        with:
+          go-version: ${{ matrix.go }}
+          check-latest: true
+
+      - name: Handle Cache for Go Package(s)
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-          
+
+      - name: Install latest xk6
+        run: go install go.k6.io/xk6/cmd/xk6@latest
+
+      - name: Build xk6-loki
+        run: make k6
