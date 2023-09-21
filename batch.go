@@ -11,7 +11,7 @@ import (
 	fake "github.com/brianvoe/gofakeit/v6"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
-	"github.com/grafana/loki/pkg/logproto"
+	"github.com/grafana/loki/pkg/push"
 	json "github.com/mailru/easyjson"
 	"github.com/prometheus/common/model"
 	"go.k6.io/k6/js/common"
@@ -24,13 +24,13 @@ type FakeFunc func() string
 type LabelPool map[model.LabelName][]string
 
 type Batch struct {
-	Streams   map[string]*logproto.Stream
+	Streams   map[string]*push.Stream
 	Bytes     int
 	CreatedAt time.Time
 }
 
 type Entry struct {
-	logproto.Entry
+	push.Entry
 	TenantID string
 	Labels   model.LabelSet
 }
@@ -113,7 +113,7 @@ func labelStringToMap(labels string) map[string]string {
 
 // entriesToValues converts a slice of `Entry` to a slice of string tuples that
 // can be used in the JSON payload of push requests.
-func entriesToValues(entries []logproto.Entry) [][]string {
+func entriesToValues(entries []push.Entry) [][]string {
 	lines := make([][]string, 0, len(entries))
 	for _, entry := range entries {
 		lines = append(lines, []string{
@@ -126,9 +126,9 @@ func entriesToValues(entries []logproto.Entry) [][]string {
 
 // createPushRequest creates a push request and returns it, together with
 // number of entries
-func (b *Batch) createPushRequest() (*logproto.PushRequest, int) {
-	req := logproto.PushRequest{
-		Streams: make([]logproto.Stream, 0, len(b.Streams)),
+func (b *Batch) createPushRequest() (*push.PushRequest, int) {
+	req := push.PushRequest{
+		Streams: make([]push.Stream, 0, len(b.Streams)),
 	}
 
 	entriesCount := 0
@@ -152,7 +152,7 @@ func (c *Client) getRandomLabelSet() model.LabelSet {
 // newBatch creates a batch with randomly generated log streams
 func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 	batch := &Batch{
-		Streams:   make(map[string]*logproto.Stream, numStreams),
+		Streams:   make(map[string]*push.Stream, numStreams),
 		CreatedAt: time.Now(),
 	}
 	state := c.vu.State()
@@ -169,7 +169,7 @@ func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 		if _, ok := labels[model.InstanceLabel]; !ok {
 			labels[model.InstanceLabel] = model.LabelValue(fmt.Sprintf("vu%d.%s", state.VUID, hostname))
 		}
-		stream := &logproto.Stream{Labels: labels.String()}
+		stream := &push.Stream{Labels: labels.String()}
 		batch.Streams[stream.Labels] = stream
 
 		var now time.Time
@@ -185,7 +185,7 @@ func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 		for ; batch.Bytes < streamMaxByte; batch.Bytes += len(line) {
 			now = time.Now()
 			line = c.flog.LogLine(logFmt, now)
-			stream.Entries = append(stream.Entries, logproto.Entry{
+			stream.Entries = append(stream.Entries, push.Entry{
 				Timestamp: now,
 				Line:      line,
 			})
