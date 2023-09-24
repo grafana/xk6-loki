@@ -1,12 +1,36 @@
 import {sleep, check} from 'k6';
 import loki from 'k6/x/loki';
 
+/*
+ * Host name with port
+ * @constant {string}
+ */
+const HOST = __ENV.LOKI_ADDR || fail("provide LOKI_ADDR when starting k6");
+
+/**
+ * Optional name of the Loki tenant
+ * @constant {string}
+ */
+const TENANT_ID = __ENV.LOKI_TENANT_ID || '';
+
+/**
+ * Optional access token of the Loki tenant with logs:write and logs:read permissions
+ * @constant {string}
+ */
+const ACCESS_TOKEN = __ENV.LOKI_ACCESS_TOKEN || '';
+
+/**
+ * Configures the protocol scheme used for requests.
+ * @constant {string}
+ */
+const SCHEME = __ENV.K6_SCHEME || 'http';
+
 /**
  * URL used for push and query requests
  * Path is automatically appended by the client
  * @constant {string}
  */
-const BASE_URL = `http://localhost:3100`;
+const BASE_URL = `${SCHEME}://${TENANT_ID}:${ACCESS_TOKEN}@${HOST}`;
 
 /**
  * Helper constant for byte values
