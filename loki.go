@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
-	"github.com/dop251/goja"
+	"github.com/grafana/sobek"
 	"github.com/grafana/xk6-loki/flog"
 	"github.com/prometheus/common/model"
 	"github.com/sirupsen/logrus"
@@ -120,7 +120,7 @@ func (r *Loki) Exports() modules.Exports {
 // ```js
 // const cfg = new loki.Config(url);
 // ```
-func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
+func (r *Loki) config(c sobek.ConstructorCall) *sobek.Object {
 	rt := r.vu.Runtime()
 
 	// The default config, which we might overwrite below
@@ -157,7 +157,7 @@ func (r *Loki) config(c goja.ConstructorCall) *goja.Object {
 	return rt.ToValue(config).ToObject(rt)
 }
 
-func (r *Loki) parsePositionalConfig(c goja.ConstructorCall, config *Config) error {
+func (r *Loki) parsePositionalConfig(c sobek.ConstructorCall, config *Config) error {
 	rt := r.vu.Runtime()
 
 	urlString := c.Argument(0).String()
@@ -194,11 +194,11 @@ func (r *Loki) parsePositionalConfig(c goja.ConstructorCall, config *Config) err
 	return nil
 }
 
-func isNully(v goja.Value) bool {
-	return v == nil || goja.IsUndefined(v) || goja.IsNull(v)
+func isNully(v sobek.Value) bool {
+	return v == nil || sobek.IsUndefined(v) || sobek.IsNull(v)
 }
 
-func (r *Loki) parseConfigObject(c *goja.Object, config *Config) error {
+func (r *Loki) parseConfigObject(c *sobek.Object, config *Config) error {
 	rt := r.vu.Runtime()
 	if v := c.Get("url"); !isNully(v) {
 		u, err := url.Parse(v.String())
@@ -252,7 +252,7 @@ func (r *Loki) parseConfigObject(c *goja.Object, config *Config) error {
 // ```js
 // const client = new loki.Client(cfg);
 // ```
-func (r *Loki) client(c goja.ConstructorCall) *goja.Object {
+func (r *Loki) client(c sobek.ConstructorCall) *sobek.Object {
 	rt := r.vu.Runtime()
 	config, ok := c.Argument(0).Export().(*Config)
 	if !ok {
@@ -280,7 +280,7 @@ func (r *Loki) client(c goja.ConstructorCall) *goja.Object {
 	}).ToObject(rt)
 }
 
-func (r *Loki) createLabels(c goja.ConstructorCall) *goja.Object {
+func (r *Loki) createLabels(c sobek.ConstructorCall) *sobek.Object {
 	rt := r.vu.Runtime()
 	var labels map[string][]string
 	if err := rt.ExportTo(c.Argument(0), &labels); err != nil {
