@@ -276,7 +276,7 @@ func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 			})
 
 			// Have a ~0.01% to show this line sample if we haven't shown one before
-			if len(hcValues) > 0 && !shownSample && c.rand.Float32() > 0.0001 {
+			if len(hcValues) > 0 && !shownSample && c.rand.Float32() < 0.0001 {
 				shownSample = true
 				scState := lib.GetScenarioState(c.vu.Context())
 				state.Logger.
