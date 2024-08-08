@@ -252,15 +252,17 @@ func (r *Loki) parseConfigObject(c *sobek.Object, config *Config) error {
 		}
 
 		for k, v := range config.HCLabels {
-			if v.LineCount <= 0 {
-				return fmt.Errorf("Invalid lineCount value for HC %s", v.Name)
-			}
-			if v.Probability < math.SmallestNonzeroFloat64 || v.Probability > 1 {
-				return fmt.Errorf("Invalid probability value for HC %s", v.Name)
-			}
-			if v.LineCountJitter < math.SmallestNonzeroFloat64 || v.Probability > 1 {
-				return fmt.Errorf("Invalid lineCountJitter value for HC %s", v.Name)
-			}
+			/*
+				if v.LineCount <= 0 {
+					return fmt.Errorf("Invalid lineCount value for HC %s", v.Name)
+				}
+				if v.Probability < math.SmallestNonzeroFloat64 || v.Probability > 1 {
+					return fmt.Errorf("Invalid probability value for HC %s", v.Name)
+				}
+				if v.LineCountJitter < math.SmallestNonzeroFloat64 || v.Probability > 1 {
+					return fmt.Errorf("Invalid lineCountJitter value for HC %s", v.Name)
+				}
+			*/
 			if v.Cardinality == 0 {
 				config.HCLabels[k].Cardinality = math.MaxInt64
 			}
@@ -270,8 +272,8 @@ func (r *Loki) parseConfigObject(c *sobek.Object, config *Config) error {
 		}
 	}
 
-	if v := c.Get("sendIndexLabels"); !isNully(v) {
-		config.SendIndexLabels = v.ToBoolean()
+	if v := c.Get("sendHCAsLabels"); !isNully(v) {
+		config.SendHCAsLabels = v.ToBoolean()
 	}
 
 	return nil

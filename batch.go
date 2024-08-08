@@ -14,7 +14,6 @@ import (
 	"github.com/grafana/loki/pkg/push"
 	json "github.com/mailru/easyjson"
 	"github.com/prometheus/common/model"
-	"github.com/sirupsen/logrus"
 	"go.k6.io/k6/js/common"
 	"go.k6.io/k6/lib"
 )
@@ -155,56 +154,61 @@ func (c *Client) getHCValues() [][2]string {
 	result := [][2]string{}
 
 	for _, hcv := range c.hcState {
-		if hcv.SkipCount > 0 {
-			hcv.SkipCount-- // skip,
-			continue
-		}
-
-		// Regenerate value if its the start or we ran out
-		if hcv.RemCount <= 0 {
-			// Reset the line counters back to their configured
-			// lineCount/skipLineCount values, +/- rand(0:lineCountJitter)%
-			jitter := (1 + hcv.LineCountJitter*(2*c.rand.Float64()-1))
-			hcv.RemCount = int(float64(hcv.LineCount) * jitter)
-			hcv.SkipCount = int(float64(hcv.SkipLineCount) * jitter)
-
-			// TODO: support more value generators?
-			if hcv.Generator == "randInt" {
-				hcv.CurrentValue = strconv.FormatInt(c.rand.Int63n(hcv.Cardinality), 10)
-			} else {
-				hcv.CurrentValue = fmt.Sprintf("%016x", c.rand.Int63n(hcv.Cardinality))
+		/*
+			if hcv.SkipCount > 0 {
+				hcv.SkipCount-- // skip,
+				continue
 			}
 
-			scState := lib.GetScenarioState(c.vu.Context())
-			logger := c.vu.State().Logger.WithField("scenario", scState.Name).WithField(hcv.Name, hcv.CurrentValue)
-			level := logrus.DebugLevel
-			if c.rand.Float32() < 0.01 {
-				level = logrus.InfoLevel // only show ~1% of these logs by default
+			// Regenerate value if its the start or we ran out
+			if hcv.RemCount <= 0 {
+				// Reset the line counters back to their configured
+				// lineCount/skipLineCount values, +/- rand(0:lineCountJitter)%
+				jitter := (1 + hcv.LineCountJitter*(2*c.rand.Float64()-1))
+				hcv.RemCount = int(float64(hcv.LineCount) * jitter)
+				hcv.SkipCount = int(float64(hcv.SkipLineCount) * jitter)
+
+				// TODO: support more value generators?
+				if hcv.Generator == "randInt" {
+					hcv.CurrentValue = strconv.FormatInt(c.rand.Int63n(hcv.Cardinality), 10)
+				} else {
+					hcv.CurrentValue = fmt.Sprintf("%016x", c.rand.Int63n(hcv.Cardinality))
+				}
+
+				scState := lib.GetScenarioState(c.vu.Context())
+				logger := c.vu.State().Logger.WithField("scenario", scState.Name).WithField(hcv.Name, hcv.CurrentValue)
+				level := logrus.DebugLevel
+				if c.rand.Float32() < 0.01 {
+					level = logrus.InfoLevel // only show ~1% of these logs by default
+				}
+				logger.Logf(
+					level,
+					"New HC value for '%s', skip next %d lines, then use for %d lines with %.0f%% probability",
+					hcv.Name, hcv.SkipCount, hcv.RemCount, hcv.Probability*100,
+				)
+				continue
 			}
-			logger.Logf(
-				level,
-				"New HC value for '%s', skip next %d lines, then use for %d lines with %.0f%% probability",
-				hcv.Name, hcv.SkipCount, hcv.RemCount, hcv.Probability*100,
-			)
-			continue
+
+			if c.rand.Float64() > hcv.Probability {
+				continue // this high-cardinality value doesn't occur on this log line
+			}
+
+			hcv.RemCount--
+		*/
+
+		if hcv.Generator == "randInt" {
+			hcv.CurrentValue = strconv.FormatInt(c.rand.Int63n(hcv.Cardinality), 10)
+		} else {
+			hcv.CurrentValue = fmt.Sprintf("%016x", c.rand.Int63n(hcv.Cardinality))
 		}
 
-		if c.rand.Float64() > hcv.Probability {
-			continue // this high-cardinality value doesn't occur on this log line
-		}
-
-		hcv.RemCount--
 		result = append(result, [2]string{hcv.Name, hcv.CurrentValue})
 	}
 
 	return result
 }
 
-func (c *Client) formatIndexLabels(labels [][2]string) string {
-	if !c.cfg.SendIndexLabels {
-		return ""
-	}
-
+func (c *Client) formatHCValues(labels [][2]string) string {
 	result := make([]string, len(labels))
 	for i, hcv := range labels {
 		// TODO: figure out if this is the correct encoding?
@@ -235,6 +239,20 @@ func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 		if _, ok := labels[model.InstanceLabel]; !ok {
 			labels[model.InstanceLabel] = model.LabelValue(fmt.Sprintf("vu%d.%s", state.VUID, hostname))
 		}
+
+		hcValues := c.getHCValues()
+		var structuredMetadata push.LabelsAdapter
+		if c.cfg.SendHCAsLabels {
+			for _, hcv := range hcValues {
+				labels[model.LabelName(hcv[0])] = model.LabelValue(hcv[1])
+			}
+		} else {
+			structuredMetadata = make(push.LabelsAdapter, len(hcValues))
+			for hci, hcv := range hcValues {
+				structuredMetadata[hci] = push.LabelAdapter{Name: hcv[0], Value: hcv[1]}
+			}
+		}
+
 		stream := &push.Stream{Labels: labels.String()}
 		batch.Streams[stream.Labels] = stream
 
@@ -250,23 +268,21 @@ func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 		streamMaxByte := maxSizePerStream * (i + 1)
 		for ; batch.Bytes < streamMaxByte; batch.Bytes += len(line) {
 			now = time.Now()
-			hcValues := c.getHCValues()
 			line = c.flog.LogLine(logFmt, now, hcValues)
-			indexLabels := c.formatIndexLabels(hcValues)
 			stream.Entries = append(stream.Entries, push.Entry{
-				Timestamp: now,
-				Line:      line,
-				IndexLabels: indexLabels,
+				Timestamp:          now,
+				Line:               line,
+				StructuredMetadata: structuredMetadata,
 			})
 
-
 			// Have a ~0.01% to show this line sample if we haven't shown one before
-			if len(hcValues) > 0 && !shownSample && c.rand.Float32() < 0.0001 {
+			if len(hcValues) > 0 && !shownSample && c.rand.Float32() > 0.0001 {
 				shownSample = true
 				scState := lib.GetScenarioState(c.vu.Context())
 				state.Logger.
 					WithField("scenario", scState.Name).WithField("labels", labels.String()).
-					WithField("indexLabels", indexLabels).Infof("Sample log line: %s", line)
+					WithField("hcLabels", c.formatHCValues(hcValues)).WithField("sendHCAsLabels", c.cfg.SendHCAsLabels).
+					Infof("Sample log line: %s", line)
 			}
 		}
 	}

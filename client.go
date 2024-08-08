@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
-	"github.com/grafana/loki/pkg/logqlmodel/stats"
+	"github.com/grafana/loki/v3/pkg/logqlmodel/stats"
 	"github.com/grafana/xk6-loki/flog"
 	"github.com/prometheus/common/model"
 	"go.k6.io/k6/js/modules"
@@ -48,13 +48,15 @@ type Client struct {
 }
 
 type HighCardinalityLabel struct {
-	Name            string  `js:"name"`
-	LineCount       int     `js:"lineCount"`
-	SkipLineCount   int     `js:"skipLineCount"`
-	LineCountJitter float64 `js:"lineCountJitter"` // should be between 0 and 1
-	Probability     float64 `js:"probability"`     // should be between 0 and 1
-	Generator       string  `js:"generator"`
-	Cardinality     int64   `js:"cardinality"` // int64 should be good enough for everyone...
+	Name string `js:"name"`
+	/*
+		LineCount       int     `js:"lineCount"`
+		SkipLineCount   int     `js:"skipLineCount"`
+		LineCountJitter float64 `js:"lineCountJitter"` // should be between 0 and 1
+		Probability     float64 `js:"probability"`     // should be between 0 and 1
+	*/
+	Generator   string `js:"generator"`
+	Cardinality int64  `js:"cardinality"` // int64 should be good enough for everyone...
 }
 
 type HighCardinalityLabelState struct {
@@ -74,8 +76,8 @@ type Config struct {
 	ProtobufRatio float64
 	RandSeed      int64
 
-	HCLabels        []HighCardinalityLabel
-	SendIndexLabels bool
+	HCLabels       []HighCardinalityLabel
+	SendHCAsLabels bool
 }
 
 func (c *Client) InstantQuery(logQuery string, limit int) (httpext.Response, error) {
