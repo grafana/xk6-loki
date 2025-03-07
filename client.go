@@ -244,6 +244,9 @@ func (c *Client) PushParametrized(streams, minBatchSize, maxBatchSize int) (http
 }
 
 func (c *Client) PushParameterized(streams, minBatchSize, maxBatchSize int) (httpext.Response, error) {
+	if minBatchSize > maxBatchSize {
+		return *httpext.NewResponse(), errors.New("minimum batch size needs to be smaller or equal to max batch size")
+	}
 	state := c.vu.State()
 	if state == nil {
 		return *httpext.NewResponse(), errors.New("state is nil")

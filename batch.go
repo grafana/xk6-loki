@@ -162,7 +162,11 @@ func (c *Client) newBatch(numStreams, minBatchSize, maxBatchSize int) *Batch {
 		hostname = "localhost"
 	}
 
-	maxSizePerStream := (minBatchSize + c.rand.Intn(maxBatchSize-minBatchSize)) / numStreams
+	maxSizePerStream := minBatchSize
+	if minBatchSize != maxBatchSize {
+		maxSizePerStream += c.rand.Intn(maxBatchSize - minBatchSize)
+	}
+	maxSizePerStream /= numStreams
 
 	for i := 0; i < numStreams; i++ {
 		labels := c.getRandomLabelSet()
