@@ -246,7 +246,7 @@ These metrics are collected only for instant and range queries.
 ## Example
 
 ```js
-import sleep from 'k6';
+import { check, sleep } from 'k6';
 import loki from 'k6/x/loki';
 
 /**
