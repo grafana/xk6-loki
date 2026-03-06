@@ -9,7 +9,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/brianvoe/gofakeit/v6"
+	"github.com/brianvoe/gofakeit/v7"
 	"github.com/grafana/sobek"
 	"github.com/grafana/xk6-loki/flog"
 	"github.com/prometheus/common/model"

@@ -1,9 +1,9 @@
 module github.com/grafana/xk6-loki
 
-go 1.20
+go 1.22
 
 require (
-	github.com/brianvoe/gofakeit/v6 v6.9.0
+	github.com/brianvoe/gofakeit/v7 v7.14.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/grafana/loki v1.6.2-0.20230310093109-e2ac2d50e2d7

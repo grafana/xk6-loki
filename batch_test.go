@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	gofakeit "github.com/brianvoe/gofakeit/v6"
+	gofakeit "github.com/brianvoe/gofakeit/v7"
 	"go.k6.io/k6/js/modulestest"
 	"go.k6.io/k6/lib"
 	"go.k6.io/k6/metrics"

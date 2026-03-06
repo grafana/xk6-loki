@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	fake "github.com/brianvoe/gofakeit/v6"
+	fake "github.com/brianvoe/gofakeit/v7"
 	"github.com/gogo/protobuf/proto"
 	"github.com/golang/snappy"
 	"github.com/grafana/loki/pkg/push"
