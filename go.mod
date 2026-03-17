@@ -9,7 +9,7 @@ require (
 	github.com/grafana/loki v1.6.2-0.20230310093109-e2ac2d50e2d7
 	github.com/grafana/loki/pkg/push v0.0.0-20230127102416-571f88bc5765
 	github.com/grafana/sobek v0.0.0-20240607083612-4f0cd64f4e78
-	github.com/mailru/easyjson v0.7.7
+	github.com/mailru/easyjson v0.9.2
 	github.com/prometheus/common v0.44.0
 	github.com/sirupsen/logrus v1.9.3
 	go.k6.io/k6 v0.51.1-0.20240610082146-1f01a9bc2365
