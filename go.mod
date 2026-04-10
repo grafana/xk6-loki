@@ -71,4 +71,4 @@ replace github.com/gocql/gocql => github.com/grafana/gocql v0.0.0-20200605141915
 
 exclude k8s.io/client-go v8.0.0+incompatible
 
-replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.42.0
+replace github.com/prometheus/prometheus => github.com/prometheus/prometheus v0.311.1
