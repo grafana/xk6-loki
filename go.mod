@@ -8,7 +8,7 @@ require (
 	github.com/golang/snappy v0.0.4
 	github.com/grafana/loki v1.6.2-0.20230310093109-e2ac2d50e2d7
 	github.com/grafana/loki/pkg/push v0.0.0-20230127102416-571f88bc5765
-	github.com/grafana/sobek v0.0.0-20240607083612-4f0cd64f4e78
+	github.com/grafana/sobek v0.0.0-20260429085637-a66d4790012b
 	github.com/mailru/easyjson v0.7.7
 	github.com/prometheus/common v0.44.0
 	github.com/sirupsen/logrus v1.9.3
@@ -20,7 +20,7 @@ require (
 	github.com/Soontao/goHttpDigestClient v0.0.0-20170320082612-6d28bb1415c5 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
-	github.com/dlclark/regexp2 v1.10.0 // indirect
+	github.com/dlclark/regexp2 v1.12.0 // indirect
 	github.com/dop251/goja v0.0.0-20240516125602-ccbae20bcec2 // indirect
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/evanw/esbuild v0.21.2 // indirect
