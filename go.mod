@@ -1,6 +1,6 @@
 module github.com/grafana/xk6-loki
 
-go 1.20
+go 1.24
 
 require (
 	github.com/brianvoe/gofakeit/v6 v6.9.0
@@ -16,7 +16,7 @@ require (
 )
 
 require (
-	github.com/Azure/go-ntlmssp v0.0.0-20221128193559-754e69321358 // indirect
+	github.com/Azure/go-ntlmssp v0.1.1 // indirect
 	github.com/Soontao/goHttpDigestClient v0.0.0-20170320082612-6d28bb1415c5 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.2.1 // indirect
