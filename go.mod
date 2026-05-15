@@ -64,7 +64,7 @@ require (
 	gopkg.in/guregu/null.v3 v3.5.0 // indirect
 )
 
-replace github.com/hashicorp/consul => github.com/hashicorp/consul v1.5.1
+replace github.com/hashicorp/consul => github.com/hashicorp/consul v1.22.5
 
 // Use fork of gocql that has gokit logs and Prometheus metrics.
 replace github.com/gocql/gocql => github.com/grafana/gocql v0.0.0-20200605141915-ba5dc39ece85
