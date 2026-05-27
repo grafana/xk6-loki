@@ -5,26 +5,32 @@ import loki from 'k6/x/loki';
  * Host name with port
  * @constant {string}
  */
-const HOST = "xxx.grafana.net:3100";
+const HOST = __ENV.LOKI_ADDR || fail("provide LOKI_ADDR when starting k6");
 
 /**
- * Name of the Loki tenant
+ * Optional name of the Loki tenant
  * @constant {string}
  */
-const TENANT_ID = __ENV.LOKI_TENANT_ID || fail("provide LOKI_TENANT_ID when starting k6");
+const TENANT_ID = __ENV.LOKI_TENANT_ID || '';
 
 /**
- * Access token of the Loki tenant with logs:write and logs:read permissions
+ * Optional access token of the Loki tenant with logs:write and logs:read permissions
  * @constant {string}
  */
-const ACCESS_TOKEN = __ENV.LOKI_ACCESS_TOKEN || fail("provide LOKI_ACCESS_TOKEN when starting k6");
+const ACCESS_TOKEN = __ENV.LOKI_ACCESS_TOKEN || '';
+
+/**
+ * Configures the protocol scheme used for requests.
+ * @constant {string}
+ */
+const SCHEME = __ENV.K6_SCHEME || 'http';
 
 /**
  * URL used for push and query requests
  * Path is automatically appended by the client
  * @constant {string}
  */
-const BASE_URL = `https://${TENANT_ID}:${ACCESS_TOKEN}@${HOST}`;
+const BASE_URL = `${SCHEME}://${TENANT_ID}:${ACCESS_TOKEN}@${HOST}`;
 
 /**
  * Minimum amount of virtual users (VUs)
