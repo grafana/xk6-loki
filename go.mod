@@ -7,7 +7,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/grafana/loki v1.6.2-0.20230310093109-e2ac2d50e2d7
-	github.com/grafana/loki/pkg/push v0.0.0-20230127102416-571f88bc5765
+	github.com/grafana/loki/pkg/push v0.4.0
 	github.com/grafana/sobek v0.0.0-20240607083612-4f0cd64f4e78
 	github.com/mailru/easyjson v0.7.7
 	github.com/prometheus/common v0.44.0
