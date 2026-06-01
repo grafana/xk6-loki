@@ -15,10 +15,10 @@ import (
 	"github.com/grafana/loki/pkg/logqlmodel/stats"
 	"github.com/grafana/xk6-loki/flog"
 	"github.com/prometheus/common/model"
-	"go.k6.io/k6/js/modules"
-	"go.k6.io/k6/lib"
-	"go.k6.io/k6/lib/netext/httpext"
-	"go.k6.io/k6/metrics"
+	"go.k6.io/k6/v2/js/modules"
+	"go.k6.io/k6/v2/lib"
+	"go.k6.io/k6/v2/lib/netext/httpext"
+	"go.k6.io/k6/v2/metrics"
 )
 
 const (
