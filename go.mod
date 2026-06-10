@@ -10,7 +10,7 @@ require (
 	github.com/grafana/loki/pkg/push v0.0.0-20230127102416-571f88bc5765
 	github.com/grafana/sobek v0.0.0-20240607083612-4f0cd64f4e78
 	github.com/mailru/easyjson v0.7.7
-	github.com/prometheus/common v0.44.0
+	github.com/prometheus/common v0.68.1
 	github.com/sirupsen/logrus v1.9.3
 	go.k6.io/k6 v0.51.1-0.20240610082146-1f01a9bc2365
 )
@@ -43,7 +43,7 @@ require (
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
 	github.com/onsi/ginkgo v1.16.5 // indirect
 	github.com/onsi/gomega v1.24.0 // indirect
-	github.com/prometheus/procfs v0.11.1 // indirect
+	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/serenize/snaker v0.0.0-20201027110005-a7ad2135616e // indirect
 	github.com/spf13/afero v1.9.5 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
@@ -63,7 +63,7 @@ require (
 	google.golang.org/genproto/googleapis/api v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20251202230838-ff82c1b0f217 // indirect
 	google.golang.org/grpc v1.79.3 // indirect
-	google.golang.org/protobuf v1.36.10 // indirect
+	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/guregu/null.v3 v3.5.0 // indirect
 )
 
