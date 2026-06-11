@@ -13,5 +13,5 @@ k6: $(GO_FILES)
 go.sum: $(GO_FILES) go.mod
 	go mod tidy
 
-run:
-	$(PWD)/k6 run examples/read-write-scenario.js
+run: k6
+	$(PWD)/k6 run examples/simple.js
