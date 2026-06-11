@@ -1,6 +1,6 @@
 module github.com/grafana/xk6-loki
 
-go 1.25.0
+go 1.26.4
 
 require (
 	github.com/brianvoe/gofakeit/v6 v6.9.0
