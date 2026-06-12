@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/brianvoe/gofakeit/v6"
-	"github.com/grafana/loki/pkg/logqlmodel/stats"
+	"github.com/grafana/loki/v3/pkg/logqlmodel/stats"
 	"github.com/grafana/xk6-loki/flog"
 	"github.com/prometheus/common/model"
 	"go.k6.io/k6/js/modules"
