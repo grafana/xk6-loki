@@ -5,6 +5,8 @@
 
 ## Getting started
 
+### Binary installation
+
 1. Install `xk6`
 
    ```bash
@@ -23,6 +25,28 @@
    ```bash
    make k6
    ```
+
+### Docker build
+
+Alternatively, you can build the k6 binary with the extension using Docker from the Dockerfile sample provided in this repository. (Versions used in the Dockerfile are fixed, so you may want to update them to the latest versions.)
+
+1. Checkout `grafana/xk6-loki`
+
+```bash
+git clone https://github.com/grafana/xk6-loki
+```
+
+2. Build the Docker image
+
+```bash
+docker build -f Dockerfile.sample -t xk6-loki .
+```
+
+3. Run the Docker image
+
+```bash
+docker run --rm -it -v $(pwd):/test xk6-loki /test/examples/simple.js
+```
 
 ## Javascript API
 
