@@ -10,7 +10,7 @@ require (
 	github.com/grafana/loki/v3 v3.0.0-20260611205623-ac76b402773c
 	github.com/grafana/sobek v0.0.0-20240607083612-4f0cd64f4e78
 	github.com/mailru/easyjson v0.7.7
-	github.com/prometheus/common v0.67.5
+	github.com/prometheus/common v0.69.0
 	github.com/sirupsen/logrus v1.9.4
 	go.k6.io/k6 v0.51.1-0.20240610082146-1f01a9bc2365
 )
@@ -55,7 +55,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.44.0 // indirect
 	go.opentelemetry.io/otel/trace v1.44.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.10.0 // indirect
-	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/sys v0.45.0 // indirect
