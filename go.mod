@@ -8,11 +8,11 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/grafana/loki/pkg/push v0.0.0-20260611205623-ac76b402773c
 	github.com/grafana/loki/v3 v3.0.0-20260611205623-ac76b402773c
-	github.com/grafana/sobek v0.0.0-20240607083612-4f0cd64f4e78
-	github.com/mailru/easyjson v0.7.7
+	github.com/grafana/sobek v0.0.0-20250320150027-203dc85b6d98
+	github.com/mailru/easyjson v0.9.0
 	github.com/prometheus/common v0.67.5
 	github.com/sirupsen/logrus v1.9.4
-	go.k6.io/k6 v0.51.1-0.20240610082146-1f01a9bc2365
+	go.k6.io/k6 v0.59.0
 )
 
 require (
@@ -21,10 +21,10 @@ require (
 	github.com/andybalholm/brotli v1.2.1 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.3 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
-	github.com/dop251/goja v0.0.0-20240516125602-ccbae20bcec2 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
-	github.com/evanw/esbuild v0.21.2 // indirect
+	github.com/evanw/esbuild v0.25.3 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/go-kit/log v0.2.1 // indirect
 	github.com/go-logfmt/logfmt v0.6.1 // indirect
@@ -39,13 +39,13 @@ require (
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mstoykov/atlas v0.0.0-20220811071828-388f114305dd // indirect
-	github.com/mstoykov/k6-taskqueue-lib v0.1.0 // indirect
+	github.com/mstoykov/k6-taskqueue-lib v0.1.3 // indirect
 	github.com/nu7hatch/gouuid v0.0.0-20131221200532-179d4d0c4d8d // indirect
-	github.com/onsi/ginkgo v1.16.5 // indirect
-	github.com/onsi/gomega v1.24.0 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/prometheus/client_model v0.6.2 // indirect
 	github.com/serenize/snaker v0.0.0-20201027110005-a7ad2135616e // indirect
 	github.com/spf13/afero v1.15.0 // indirect
+	github.com/stretchr/testify v1.11.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel v1.44.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.43.0 // indirect
@@ -66,6 +66,8 @@ require (
 	google.golang.org/grpc v1.80.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	gopkg.in/guregu/null.v3 v3.5.0 // indirect
+	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 // Use fork of gocql that has gokit logs and Prometheus metrics.
