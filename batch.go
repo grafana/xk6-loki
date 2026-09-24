@@ -14,7 +14,7 @@ import (
 	"github.com/grafana/loki/pkg/push"
 	json "github.com/mailru/easyjson"
 	"github.com/prometheus/common/model"
-	"go.k6.io/k6/js/common"
+	"go.k6.io/k6/v2/js/common"
 )
 
 var LabelValuesFormat = []string{"apache_common", "apache_combined", "apache_error", "rfc3164", "rfc5424", "json", "logfmt"}
