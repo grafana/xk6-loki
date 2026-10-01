@@ -11,7 +11,7 @@ require (
 	github.com/grafana/sobek v0.0.0-20240607083612-4f0cd64f4e78
 	github.com/mailru/easyjson v0.7.7
 	github.com/prometheus/common v0.67.5
-	github.com/sirupsen/logrus v1.9.4
+	github.com/sirupsen/logrus v1.10.2
 	go.k6.io/k6 v0.51.1-0.20240610082146-1f01a9bc2365
 )
 
