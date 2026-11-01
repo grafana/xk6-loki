@@ -6,7 +6,7 @@ require (
 	github.com/brianvoe/gofakeit/v6 v6.9.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v1.0.0
-	github.com/grafana/loki/pkg/push v0.0.0-20260611205623-ac76b402773c
+	github.com/grafana/loki/pkg/push v0.4.0
 	github.com/grafana/loki/v3 v3.0.0-20260611205623-ac76b402773c
 	github.com/grafana/sobek v0.0.0-20240607083612-4f0cd64f4e78
 	github.com/mailru/easyjson v0.7.7
