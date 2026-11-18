@@ -146,8 +146,9 @@ func (r *Loki) config(c sobek.ConstructorCall) *sobek.Object {
 	}
 
 	r.logger.Debug(fmt.Sprintf(
-		"url=%s timeout=%s protobufRatio=%f cardinalities=%v randSeed=%d",
+		"url=%s timeout=%s protobufRatio=%f cardinalities=%v randSeed=%d, userAgent=%s, timeout=%s, tenant=%s, actor=%s",
 		&config.URL, config.Timeout, config.ProtobufRatio, config.Cardinalities, config.RandSeed,
+		config.UserAgent, config.Timeout, config.TenantID, config.Actor,
 	))
 
 	if config.TenantID == "" {
@@ -223,6 +224,10 @@ func (r *Loki) parseConfigObject(c *sobek.Object, config *Config) error {
 	if v := c.Get("tenantID"); !isNully(v) {
 		// This can overwrite the TenantID, even if we set it via the URL
 		config.TenantID = v.String()
+	}
+
+	if v := c.Get("actor"); !isNully(v) {
+		config.Actor = v.String()
 	}
 
 	if v := c.Get("cardinalities"); !isNully(v) {
