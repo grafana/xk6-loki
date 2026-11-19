@@ -244,6 +244,12 @@ func (c *Client) PushParametrized(streams, minBatchSize, maxBatchSize int) (http
 }
 
 func (c *Client) PushParameterized(streams, minBatchSize, maxBatchSize int) (httpext.Response, error) {
+	if streams < 1 {
+		return *httpext.NewResponse(), errors.New("number of streams needs to be greater than zero")
+	}
+	if minBatchSize < 0 {
+		return *httpext.NewResponse(), errors.New("minimum batch size cannot be negative")
+	}
 	if minBatchSize > maxBatchSize {
 		return *httpext.NewResponse(), errors.New("minimum batch size needs to be smaller or equal to max batch size")
 	}
